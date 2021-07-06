@@ -1,0 +1,10 @@
+{
+  "files.exclude": {
+    "src/_framework/": true,
+    ".vscode": true
+  },
+  "Lua.diagnostics.ignore": [
+    "LowerAngle",
+    "SetSize"
+  ]
+}
