@@ -80,6 +80,8 @@ function Fire.new(FireVertex:FireVertex)
 end
 
 function FireHandler:Start()
+    if (true) then return; end;
+    
 	self.Fire = workspace:WaitForChild("Fire");
 
     ReplicatedStorage:WaitForChild("Events"):WaitForChild("CreateFireVertex").OnServerEvent:Connect(function(Player, MousePosition:Vector3)

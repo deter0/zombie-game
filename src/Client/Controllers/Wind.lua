@@ -55,7 +55,7 @@ function Wind:getNoise(now, Variation)
 end
 
 function Wind:Start()
-    -- if (true) then return; end;
+    if (true) then return; end;
 
     local LastCameraPosition = Vector3.new(1e7, 1e7, 1e7);
     local LastUpdated = 0;
