@@ -1,4 +1,6 @@
-*.rbxl
-*.lock
-out/
-Baseplat.rbxl
+/out
+asset_manager_plugin.lua
+.rbxl
+.toml 
+.lock
+.agf
