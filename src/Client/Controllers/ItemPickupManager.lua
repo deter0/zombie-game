@@ -11,6 +11,9 @@ local ItemPickupManager = {
 function ItemPickupManager:Start()
     for _, Item in pairs(self.Services.ItemEntityManager:GetAllDroppedItems()) do
         warn(Item);
+
+        if (not Item.Id or not Item.ClassName) then return; end;
+        
         self.DroppedItems[Item.Id] = Item;
         print("ITem already exists");
     end

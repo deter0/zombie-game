@@ -6,5 +6,8 @@
   "Lua.diagnostics.ignore": [
     "LowerAngle",
     "SetSize"
+  ],
+  "Lua.diagnostics.disable": [
+    "redundant-parameter"
   ]
 }

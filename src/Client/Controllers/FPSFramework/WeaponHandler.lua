@@ -2,7 +2,6 @@ local WeaponHandler = {};
 WeaponHandler.__index = WeaponHandler;
 
 local LoadedAnimationCache = {};
-local WeaponConfigCache = {};
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage");
 local UserInputService = game:GetService("UserInputService");
@@ -13,19 +12,13 @@ local CollectionService = game:GetService("CollectionService");
 local Shared = ReplicatedStorage:WaitForChild("Aero"):WaitForChild("Shared");
 
 local Maid = require(Shared:WaitForChild("Maid"));
-local AudioEmitter = require(Shared:WaitForChild("AudioEmitter"));
+-- local AudioEmitter = require(Shared:WaitForChild("AudioEmitter"));
 local FootstepSounds = require(Shared:WaitForChild("FootstepSounds"));
 local Spring = require(Shared:WaitForChild("Spring"));
 local AudioModule = require(Shared:WaitForChild("AudioModule"));
 local Thread = require(Shared:WaitForChild("Thread"));
 
-delay = Thread.Delay;
-
--- warn = function() end;
--- print = warn;
-
 local Player = game:GetService("Players").LocalPlayer;
-local Mouse = Player:GetMouse();
 
 local Camera = workspace.CurrentCamera or workspace:WaitForChild("Camera");
 
@@ -56,15 +49,6 @@ local function PlayTweenOnce(Object:Instance, Properties, TweenInformation:Tween
     Tween:Play();
 end
 
--- Player.CharacterAdded:Connect(function(Character)
---     -- WeaponHandler:SetCharacter(Character);
---     -- WeaponHandler.Character = Character;
---     -- WeaponHandler.RaycastParams = WeaponHandler.RaycastParams or RaycastParams.new();
---     -- WeaponHandler.RaycastParams.FilterDescendantsInstances = {
---     --     Camera, Character, workspace:WaitForChild("Weapons")
---     -- }
--- end)
-
 function WeaponHandler.new(ServerManager)
     local self = setmetatable(
         {
@@ -88,17 +72,14 @@ function WeaponHandler.new(ServerManager)
 
     if (Character) then warn("Character exists"); self:SetCharacter(Character); end;
 
-    Player.CharacterAdded:Connect(function(Character)
-        warn("Character added");
-        self:SetCharacter(Character);
+    self.Maid.PlayerCharacterAdded = Player.CharacterAdded:Connect(function(NewCharacter)
+        self:SetCharacter(NewCharacter);
     end)
 
     return self;
 end
 
 function WeaponHandler:Remove()
-    warn("Removing");
-
     if (self.Viewmodel) then
         self.Viewmodel.Parent = ReplicatedStorage.Cache;
     end
