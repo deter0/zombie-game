@@ -12,7 +12,7 @@ local Wind = {
     Noises = {},
     Original = {},
     WindSpeed = 2,
-    WindStrength = 6,
+    WindStrength = .3,
     UpdateStreamDistance = 250/2,
     WindDirection = CFrame.Angles(0, math.rad(24), 0),
     Streaming = {},
@@ -20,7 +20,7 @@ local Wind = {
 };
 
 function Wind:UpdateStream(CameraPosition)
-    self.Streaming = not self.Streaming and {} or table.clear(self.Streaming);
+    self.Streaming = {};
 
     for index, TaggedPart:BasePart|Bone in ipairs(self.AllParts) do
         if (index % 300 == 0) then RunService.Heartbeat:Wait(); end;
