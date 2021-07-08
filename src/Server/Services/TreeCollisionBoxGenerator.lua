@@ -8,7 +8,6 @@ local TreeCollisionBoxGenerator = {};
 
 function TreeCollisionBoxGenerator:GenerateCollisionBox(TreeModel:Model)   
     local TreeTrunk = TreeModel:WaitForChild("Trunk");
-    print(TreeModel, TreeTrunk);
     
     if (TreeTrunk) then
         local XZMagnitude = math.sqrt(TreeTrunk.Size.X^2 + TreeTrunk.Size.Z^2)/14;
@@ -31,8 +30,6 @@ function TreeCollisionBoxGenerator:GenerateCollisionBox(TreeModel:Model)
 end
 
 function TreeCollisionBoxGenerator:Start()
-    print("Hello");
-    
 	for _, Tree in ipairs(CollectionService:GetTagged("Tree")) do
         self:GenerateCollisionBox(Tree);
     end
