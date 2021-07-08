@@ -9,45 +9,36 @@ local Tag = "WindShake";
 
 local Wind = {
     Range = 250,
+    Noises = {},
     Original = {},
     WindSpeed = 2,
     WindStrength = 6,
     UpdateStreamDistance = 250/2,
     WindDirection = CFrame.Angles(0, math.rad(24), 0),
-    Streaming = setmetatable({}, {__mode = "kv"});
+    Streaming = {},
+    NoiseLayers = 6
 };
 
 function Wind:UpdateStream(CameraPosition)
-    -- if (true) then return; end;
-
-    self.Streaming = {};
+    self.Streaming = not self.Streaming and {} or table.clear(self.Streaming);
 
     for index, TaggedPart:BasePart|Bone in ipairs(self.AllParts) do
         if (index % 300 == 0) then RunService.Heartbeat:Wait(); end;
 
-        local IsBone = TaggedPart:IsA("Bone");
+        if (TaggedPart:IsA("BasePart")) then
+            local Distance = (CameraPosition - (TaggedPart.Position)).Magnitude;
 
-        if (TaggedPart:IsA("BasePart") or IsBone) then
-            if ((CameraPosition - (not IsBone and TaggedPart.Position or TaggedPart.WorldPosition)).Magnitude <= self.Range) then
+            if (Distance <= self.Range) then
                 self.Streaming[#self.Streaming+1] = TaggedPart;
             elseif (self.Original[TaggedPart]) then
-                if (not IsBone) then
-                    TaggedPart.CFrame = self.Original[TaggedPart];
-                else
-                    TaggedPart.WorldPosition = self.Original[TaggedPart];
-                end
+                TaggedPart.CFrame = self.Original[TaggedPart];
                 self.Original[TaggedPart] = nil;
             end
         end
     end
 end
 
-local function Angles(x:number, y:number?, z:number?)
-    x = math.rad(x);
-    return CFrame.Angles(x, math.rad(y) or x, math.rad(z) or x);
-end
-
-function Wind:getNoise(now, Variation)
+function Wind:GetNoise(now, Variation)
     return math.noise(
         (now * self.WindSpeed)*.2,
         Variation * 10
@@ -60,7 +51,9 @@ function Wind:Start()
 
     self.AllParts = CollectionService:GetTagged(Tag);
 
-    CollectionService:GetInstanceAddedSignal(Tag):Connect(function(Instance) self.AllParts[#self.AllParts+1] = Instance; end)
+    CollectionService:GetInstanceAddedSignal(Tag):Connect(function(Instance)
+        self.AllParts[#self.AllParts+1] = Instance;
+    end)
     CollectionService:GetInstanceRemovedSignal(Tag):Connect(function(Instance) self.Original[Instance] = nil; end);
 
     if (not game:IsLoaded()) then game.Loaded:Wait(); end;
@@ -68,7 +61,7 @@ function Wind:Start()
     local CameraPosition = Camera.CFrame.Position;
     self:UpdateStream(CameraPosition);
 
-	RunService.Heartbeat:Connect(function()
+	RunService.Heartbeat:Connect(function(DeltaTime)
         CameraPosition = Camera.CFrame.Position;
 
         if ((LastCameraPosition - CameraPosition).Magnitude >= self.UpdateStreamDistance and (os.clock() - LastUpdated) > .8) then
@@ -79,28 +72,22 @@ function Wind:Start()
 
         local now = time();
 
-        local noises = {};
-        for i = 1, 6 do
-            noises[i] = self:getNoise(now, i);
+        if (not self.Noises) then self.Noises = {}; end;
+
+        table.clear(self.Noises);
+        for i = 1, self.NoiseLayers do
+            self.Noises[i] = self:GetNoise(now, i);
         end
 
         for index, Part:BasePart|Bone in ipairs(self.Streaming) do
-            local IsBone = Part:IsA("Bone");
-
-            local WindNoise = noises[(index % #noises) + 1];
+            local WindNoise = self.Noises[(index % self.NoiseLayers) + 1];
 
             if (not self.Original[Part]) then
-                self.Original[Part] = not IsBone and Part.CFrame or Part.WorldPosition;
+                self.Original[Part] = Part.CFrame;
             end
 
-            if (not IsBone) then
-                Part.CFrame = Part.CFrame:Lerp(self.Original[Part] * CFrame.Angles(WindNoise * .8, WindNoise, -WindNoise * .4) * self.WindDirection, .1);
-            else
-                Part.WorldPosition = self.Original[Part] + Vector3.new(WindNoise, 0, -WindNoise * .4);
-            end
+            Part.CFrame = Part.CFrame:Lerp(self.Original[Part] * CFrame.Angles(WindNoise * .8, WindNoise, -WindNoise * .4) * self.WindDirection, DeltaTime * 5);
         end
-
-        -- warn("Updated", #self.Streaming);
     end)
 end
 
