@@ -65,8 +65,8 @@ function InteractiveBeams:Update()
 end
 
 function InteractiveBeams:Start()
-    local StreamingUpdateIntervals = 3;
-    local UpdateIntervals = .3;
+    self.StreamingUpdateIntervals = 3;
+    self.UpdateIntervals = .3;
 
     local LastStream, LastUpdate = 0, 0;
 
@@ -79,12 +79,12 @@ function InteractiveBeams:Start()
     };
 
 	RunService.RenderStepped:Connect(function(DeltaTime:number)
-        if ((time() - LastStream) >= StreamingUpdateIntervals) then
+        if ((time() - LastStream) >= self.StreamingUpdateIntervals) then
             self:UpdateStream();
             LastStream = time();
         end
 
-        if (not UpdateIntervals or (time() - LastUpdate) >= UpdateIntervals) then
+        if (not self.UpdateIntervals or (time() - LastUpdate) >= self.UpdateIntervals) then
             self:Update();
             LastUpdate = time();
         end
