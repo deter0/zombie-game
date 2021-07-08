@@ -55,11 +55,11 @@ function WeaponHandler.new(ServerManager)
             Maid = Maid.new(),
             ActiveMaid = Maid.new(),
             Springs = {
-                Spread = Spring.create(),
-                Recoil = Spring.create(),
-                Sway = Spring.create(nil, 4, 50, 6, 6),
-                WalkCycle = Spring.create(),
-                Camera = Spring.create()
+                Spread = Spring:create(),
+                Recoil = Spring:create(),
+                Sway = Spring:create(4, 50, 6, 6),
+                WalkCycle = Spring:create(),
+                Camera = Spring:create()
             },
             ServerManager = ServerManager,
             Spread = 0,
@@ -188,15 +188,9 @@ function WeaponHandler:Equip(WeaponName:string)
         self.Weapon = self.Weapon:Clone();
     end
 
-    -- if (self.WeaponConfig) then
-    --     table.clear(self.WeaponConfig);
-    --     self.WeaponConfig = nil;
-    -- end
-
     self.Humanoid = self.Character:WaitForChild("Humanoid");
 
     self.WeaponConfig = require(self.Weapon:WaitForChild("Config"));
-    -- GetConfigStatus = nil;
 
     self.Crosshair = ReplicatedStorage:WaitForChild("Crosshair"):Clone();
     self.ActiveMaid.Crosshair = self.Crosshair;
@@ -271,8 +265,6 @@ function WeaponHandler:Equip(WeaponName:string)
     self:PlayEquipAnimation();
 
     self.Equipped = self.Weapon.Name;
-
-    -- warn("Sent equip request to server. Status: ", self.ServerManager:EquippedWeapon(self.Weapon.Name));
 
     WasWeaponCached = nil;
     return true;
@@ -455,6 +447,7 @@ function WeaponHandler:Pump()
 end
 
 local EmptyCFrame = CFrame.new();
+local EmptyVector = Vector3.new();
 local VeryFar = CFrame.new(1e8, 1e8, 1e8);
 
 function WeaponHandler:Update(DeltaTime:number)
@@ -486,7 +479,7 @@ function WeaponHandler:Update(DeltaTime:number)
         Camera.FieldOfView = Lerp(Camera.FieldOfView, 65, DeltaTime * AimingSpeed);
     end
 
-    local TargetAim = self.Aiming and self.Weapon.Offsets.Aim.Value or Vector3.new();
+    local TargetAim = self.Aiming and self.Weapon.Offsets.Aim.Value or EmptyVector;
 
     self.Weapon.Offsets.ViewmodelOffset.Aiming.Value =
         self.Weapon.Offsets.ViewmodelOffset.Aiming.Value:Lerp(
@@ -495,7 +488,7 @@ function WeaponHandler:Update(DeltaTime:number)
         );
 
     AimingSpeed = nil;
-    local MasterOffset = CFrame.new();
+    local MasterOffset = EmptyCFrame;
 
     for _, Offset in ipairs(self.Weapon.Offsets.ViewmodelOffset:GetChildren()) do
         local OffsetValue = Offset.Value;
@@ -549,7 +542,7 @@ function WeaponHandler:Update(DeltaTime:number)
 
     local MouseDelta = UserInputService:GetMouseDelta();
 
-    self.Springs.Sway:shove(Vector3.new(MouseDelta.X / 200, MouseDelta.Y / 200));
+    self.Springs.Sway:shove(Vector3.new(MouseDelta.X / 200, MouseDelta.Y / 200) * (self.WeaponConfig.WeaponLightness or 1));
 
     if (self.LoadedAnimations.Running) then
         if (self.Running) then
@@ -589,7 +582,7 @@ function WeaponHandler:Update(DeltaTime:number)
 
     self.Sway = self.Sway and self.Sway:Lerp(
         CFrame.new(MovementSway), DeltaTime * 5
-    ) or CFrame.new();
+    ) or EmptyCFrame;
 
 
     self.CrosshairCenter.Scale = Lerp(self.CrosshairCenter.Scale, self.Aiming and 0 or 1, DeltaTime * 15);
@@ -610,11 +603,6 @@ end
 
 function WeaponHandler:Fire()
     if (self.Running) then return; end;
-
-    -- self.ServerManager:Fire(
-    --     self.Weapon:WaitForChild("Handle"):WaitForChild("Muzzle").WorldPosition,
-    --     Camera.CFrame.LookVector
-    -- );
 
     self.FireIteration = not self.FireIteration and 1 or self.FireIteration + 1;
 
