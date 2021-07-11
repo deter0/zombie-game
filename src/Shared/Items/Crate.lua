@@ -9,7 +9,7 @@ Crate.__index = Crate;
 
 function Crate:Drop(Position:Vector3)
     self.Model.PrimaryPart.CFrame = CFrame.new(Position);
-    self.Model.Parent = workspace:WaitForChild("DroppedItems");
+    -- self.Model.Parent = workspace:WaitForChild("DroppedItems");
     
     self.State = "Dropped";
     self.Reporter:ItemDropped(self);

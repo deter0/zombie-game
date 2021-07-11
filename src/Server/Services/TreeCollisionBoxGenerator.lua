@@ -19,11 +19,10 @@ function TreeCollisionBoxGenerator:GenerateCollisionBox(TreeModel:Model)
         CollisionBox.Size = CollisionBoxSize;
         CollisionBox.CFrame = TreeTrunk.CFrame;
 
-        CollisionBox.Transparency = .5;
+        CollisionBox.Transparency = 1;
         CollisionBox.Anchored = true;
-        CollisionBox.Color = Color3.new(1, 0, 0);
 
-        CollisionBox.Parent = TreeModel;
+        CollisionBox.Parent = workspace:WaitForChild("TreeCollidors");
         
         TreeTrunk.CanCollide = false;
     end

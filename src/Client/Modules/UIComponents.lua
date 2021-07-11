@@ -5,8 +5,6 @@
 local RunService = game:GetService("RunService");
 local UserInputService = game:GetService("UserInputService");
 
-local Camera = workspace.CurrentCamera or workspace:WaitForChild("Camera");
-
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Aero"):WaitForChild("Shared");
 
 local Signal = require(Shared:WaitForChild("Signal"));

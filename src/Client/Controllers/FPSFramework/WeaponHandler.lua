@@ -450,6 +450,10 @@ local EmptyCFrame = CFrame.new();
 local EmptyVector = Vector3.new();
 local VeryFar = CFrame.new(1e8, 1e8, 1e8);
 
+local function clamp(x:number)
+    return math.clamp(x, 0, 1);
+end
+
 function WeaponHandler:Update(DeltaTime:number)
     if (not self.Equipped) then return; end;
     if (not self.WeaponConfig) then
@@ -484,7 +488,7 @@ function WeaponHandler:Update(DeltaTime:number)
     self.Weapon.Offsets.ViewmodelOffset.Aiming.Value =
         self.Weapon.Offsets.ViewmodelOffset.Aiming.Value:Lerp(
             TargetAim,
-            DeltaTime * AimingSpeed
+            clamp(DeltaTime * AimingSpeed)
         );
 
     AimingSpeed = nil;
@@ -529,14 +533,14 @@ function WeaponHandler:Update(DeltaTime:number)
     local RunningCFrame =
         EmptyCFrame:Lerp(self.Running and (self.Weapon.Offsets:FindFirstChild("Running") and self.Weapon.Offsets.Running.Value or CFrame.new(.4, 0, -.3) * CFrame.Angles(0, math.rad(45), 0)) or EmptyCFrame, self.Speed or 0);
 
-    self.RunningCFrame = self.RunningCFrame:Lerp(RunningCFrame, 5 * DeltaTime);
+    self.RunningCFrame = self.RunningCFrame:Lerp(RunningCFrame, clamp(5 * DeltaTime));
 
     MasterOffset *= self.RunningCFrame;
 
     self.JumpingVelocity = self.JumpingVelocity or EmptyCFrame;
 
     local JumpingVelocity = CFrame.Angles(-math.rad(self.Character.PrimaryPart.Velocity.Y), 0, 0);
-    self.JumpingVelocity = self.JumpingVelocity:Lerp(JumpingVelocity, 10 * DeltaTime);
+    self.JumpingVelocity = self.JumpingVelocity:Lerp(JumpingVelocity, clamp(10 * DeltaTime));
 
     MasterOffset *= self.JumpingVelocity;
 
@@ -562,7 +566,7 @@ function WeaponHandler:Update(DeltaTime:number)
     ) * GunSwayInfluence * AimingInfluence;
 
     self.CameraBobbingCFrame = self.CameraBobbingCFrame or EmptyCFrame;
-    self.CameraBobbingCFrame = self.CameraBobbingCFrame:Lerp(CFrame.Angles(0, 0, math.rad(GetBobbing(6+(self.Running and 1.3 or 0), .7, self.Speed)) * (self.Running and 2 or 1)), DeltaTime * 5);
+    self.CameraBobbingCFrame = self.CameraBobbingCFrame:Lerp(CFrame.Angles(0, 0, math.rad(GetBobbing(6+(self.Running and 1.3 or 0), .7, self.Speed)) * (self.Running and 2 or 1)), clamp(DeltaTime * 5));
 
     local CameraOffset = self.Springs.Camera:update(DeltaTime);
     CameraOffset = CFrame.Angles(
@@ -581,13 +585,13 @@ function WeaponHandler:Update(DeltaTime:number)
     local RecoilOffset = self.Springs.Recoil:update(DeltaTime);
 
     self.Sway = self.Sway and self.Sway:Lerp(
-        CFrame.new(MovementSway), DeltaTime * 5
+        CFrame.new(MovementSway), clamp(DeltaTime * 5)
     ) or EmptyCFrame;
 
 
     self.CrosshairCenter.Scale = Lerp(self.CrosshairCenter.Scale, self.Aiming and 0 or 1, DeltaTime * 15);
 
-    self.CrosshairDirection = not self.CrosshairDirection and Camera.CFrame.LookVector or self.CrosshairDirection:Lerp(Camera.CFrame.LookVector, DeltaTime * 18);
+    self.CrosshairDirection = not self.CrosshairDirection and Camera.CFrame.LookVector or self.CrosshairDirection:Lerp(Camera.CFrame.LookVector, clamp(DeltaTime * 18));
     self.Crosshair.CFrame = CFrame.lookAt(Camera.CFrame.Position + (self.CrosshairDirection * 5), Camera.CFrame.Position);
 
     self.Viewmodel.RootPart.CFrame = Camera.CFrame:ToWorldSpace(CFrame.new(RecoilOffset) * CFrame.new(ShoveOffset));
