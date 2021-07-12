@@ -58,6 +58,13 @@ local DefaultSettings = {
             Order = 5,
             DefaultValue = false,
             Description = "Low quaility models are more performant with less vertices to render. (Please note that there might be some issues with using this mode)"
+        },
+        {
+            Name = "Blood deforms with surface",
+            Type = "Checkbox",
+            Order = 6,
+            DefaultValue = true,
+            Description = "Currently roblox mesh deformation makes a big performance impact. Maybe they'll fix it in the future. This may cause some fps (60 -> 55) drops when changing blood's bones' positions for a split second."
         }
     },
 };
