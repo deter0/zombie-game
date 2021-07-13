@@ -8,15 +8,15 @@ local Camera = workspace.CurrentCamera or workspace:WaitForChild("Camera");
 local Tag = "WindShake";
 
 local Wind = {
-    Range = 250,
+    Range = 45,
     Noises = {},
     Original = {},
-    WindSpeed = 2,
-    WindStrength = .3,
-    UpdateStreamDistance = 250/2,
+    WindSpeed = 3,
+    WindStrength = .1,
+    UpdateStreamDistance = 45/2,
     WindDirection = CFrame.Angles(0, math.rad(24), 0),
     Streaming = {},
-    NoiseLayers = 6
+    NoiseLayers = 12
 };
 
 function Wind:UpdateStream(CameraPosition)
@@ -36,10 +36,13 @@ function Wind:UpdateStream(CameraPosition)
             end
         end
     end
+
+    print(#self.Streaming, "Streaming parts");
 end
 
+local noise = math.noise;
 function Wind:GetNoise(now, Variation)
-    return math.noise(
+    return noise(
         (now * self.WindSpeed)*.2,
         Variation * 10
     ) * self.WindStrength;
@@ -47,7 +50,7 @@ end
 
 function Wind:Start()
     local LastCameraPosition = Vector3.new(1e7, 1e7, 1e7);
-    local LastUpdated = 0;
+    local LastUpdated = -math.huge;
 
     self.AllParts = CollectionService:GetTagged(Tag);
 
@@ -61,32 +64,34 @@ function Wind:Start()
     local CameraPosition = Camera.CFrame.Position;
     self:UpdateStream(CameraPosition);
 
+    self.Noises = {};
+
+    local Angles = CFrame.Angles;
+
 	RunService.Heartbeat:Connect(function(DeltaTime)
         CameraPosition = Camera.CFrame.Position;
 
-        if ((LastCameraPosition - CameraPosition).Magnitude >= self.UpdateStreamDistance and (os.clock() - LastUpdated) > .8) then
+        if ((LastCameraPosition - CameraPosition).Magnitude >= self.UpdateStreamDistance and (time() - LastUpdated) > .8) then
             self:UpdateStream(CameraPosition);
             LastCameraPosition = CameraPosition;
-            LastUpdated = os.clock();
+            LastUpdated = time();
         end
 
         local now = time();
 
-        if (not self.Noises) then self.Noises = {}; end;
-
-        table.clear(self.Noises);
         for i = 1, self.NoiseLayers do
             self.Noises[i] = self:GetNoise(now, i);
         end
-
-        for index, Part:BasePart|Bone in ipairs(self.Streaming) do
+    
+        for index, Part in ipairs(self.Streaming) do
             local WindNoise = self.Noises[(index % self.NoiseLayers) + 1];
+            local WindNoise2 = self.Noises[((index - 1) % self.NoiseLayers) + 1] * .9;
 
             if (not self.Original[Part]) then
                 self.Original[Part] = Part.CFrame;
             end
 
-            Part.CFrame = Part.CFrame:Lerp(self.Original[Part] * CFrame.Angles(WindNoise * .8, WindNoise, -WindNoise * .4) * self.WindDirection, DeltaTime * 5);
+            Part.CFrame = (self.Original[Part] * Angles(WindNoise2, WindNoise, -WindNoise * .4) * self.WindDirection);
         end
     end)
 end

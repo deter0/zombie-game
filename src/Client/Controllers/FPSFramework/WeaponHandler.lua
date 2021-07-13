@@ -539,7 +539,7 @@ function WeaponHandler:Update(DeltaTime:number)
 
     self.JumpingVelocity = self.JumpingVelocity or EmptyCFrame;
 
-    local JumpingVelocity = CFrame.Angles(-math.rad(self.Character.PrimaryPart.Velocity.Y), 0, 0);
+    local JumpingVelocity = CFrame.Angles(-math.rad(math.clamp(self.Character.PrimaryPart.Velocity.Y, -35, 35)), 0, 0);
     self.JumpingVelocity = self.JumpingVelocity:Lerp(JumpingVelocity, clamp(10 * DeltaTime));
 
     MasterOffset *= self.JumpingVelocity;
@@ -555,6 +555,8 @@ function WeaponHandler:Update(DeltaTime:number)
             self.LoadedAnimations.Running:AdjustWeight(0, .2);
         end
     end
+
+
 
     local AimingInfluence = self.Aiming and (self.WeaponConfig.AimingInfluence or .1) or 1; --> Alternative to lower wobble when aiming
     local GunSwayInfluence = self.WeaponConfig.GunSwayInfluence or .7;

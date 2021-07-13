@@ -18,6 +18,7 @@ function InputManager:Start()
         [1] = Enum.KeyCode.One,
         [2] = Enum.KeyCode.Two,
         [3] = Enum.KeyCode.Three,
+        [4] = Enum.KeyCode.Four
     };
     
     local Camera = workspace.CurrentCamera or workspace:WaitForChild("Camera");
