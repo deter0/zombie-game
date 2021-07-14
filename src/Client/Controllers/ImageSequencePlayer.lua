@@ -5,37 +5,37 @@ local Thread = require(Shared:WaitForChild("Thread"));
 
 local ImageSequencePlayer = {};
 
-function ImageSequencePlayer:Start()
-	local LoadingScreen = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("LoadingScreen");
+-- function ImageSequencePlayer:Start()
+	-- local LoadingScreen = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui"):WaitForChild("LoadingScreen");
 
-	self:Play(
-		LoadingScreen:WaitForChild("Background"):WaitForChild("Player"), .05, {
-			"rbxassetid://7092418991",
-			"rbxassetid://7092418885",
-			"rbxassetid://7092418800",
-			"rbxassetid://7092418720",
-			"rbxassetid://7092418654",
-			"rbxassetid://7092418580",
-			"rbxassetid://7092418501",
-			"rbxassetid://7092418441",
-			"rbxassetid://7092418376",
-			"rbxassetid://7092418282",
-			"rbxassetid://7092418207",
-			"rbxassetid://7092418129",
-			"rbxassetid://7092418043",
-			"rbxassetid://7092417974",
-			"rbxassetid://7092417886",
-			"rbxassetid://7092417789",
-			"rbxassetid://7092417687",
-			"rbxassetid://7092417623",
-			"rbxassetid://7092417555",
-			"rbxassetid://7092417489",
-			"rbxassetid://7092417417",
-			"rbxassetid://7092417343",
-			"rbxassetid://7092417252"
-		}
-	)
-end
+	-- self:Play(
+	-- 	LoadingScreen:WaitForChild("Background"):WaitForChild("Player"), .05, {
+	-- 		"rbxassetid://7092418991",
+	-- 		"rbxassetid://7092418885",
+	-- 		"rbxassetid://7092418800",
+	-- 		"rbxassetid://7092418720",
+	-- 		"rbxassetid://7092418654",
+	-- 		"rbxassetid://7092418580",
+	-- 		"rbxassetid://7092418501",
+	-- 		"rbxassetid://7092418441",
+	-- 		"rbxassetid://7092418376",
+	-- 		"rbxassetid://7092418282",
+	-- 		"rbxassetid://7092418207",
+	-- 		"rbxassetid://7092418129",
+	-- 		"rbxassetid://7092418043",
+	-- 		"rbxassetid://7092417974",
+	-- 		"rbxassetid://7092417886",
+	-- 		"rbxassetid://7092417789",
+	-- 		"rbxassetid://7092417687",
+	-- 		"rbxassetid://7092417623",
+	-- 		"rbxassetid://7092417555",
+	-- 		"rbxassetid://7092417489",
+	-- 		"rbxassetid://7092417417",
+	-- 		"rbxassetid://7092417343",
+	-- 		"rbxassetid://7092417252"
+	-- 	}
+	-- )
+-- end
 
 --[[
 	{

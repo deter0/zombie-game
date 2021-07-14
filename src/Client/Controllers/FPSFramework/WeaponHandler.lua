@@ -511,10 +511,12 @@ function WeaponHandler:Update(DeltaTime:number)
 
     local AimingSpeed = self.WeaponConfig.AimingSpeed or 6;
 
+    -- * ((self.Speed * (self.WeaponConfig.RunningFieldOfViewMultiplier or 5))+1)
+
     if (self.Aiming) then
-        Camera.FieldOfView = Lerp(Camera.FieldOfView, 40, DeltaTime * AimingSpeed);
+        Camera.FieldOfView = Lerp(Camera.FieldOfView, self.WeaponConfig.AimingFieldOfView or 40, DeltaTime * AimingSpeed);
     else
-        Camera.FieldOfView = Lerp(Camera.FieldOfView, 65, DeltaTime * AimingSpeed);
+        Camera.FieldOfView = Lerp(Camera.FieldOfView, (self.WeaponConfig.FieldOfView or 65), DeltaTime * AimingSpeed);
     end
 
     local TargetAim = self.Aiming and self.Weapon.Offsets.Aim.Value or EmptyVector;
