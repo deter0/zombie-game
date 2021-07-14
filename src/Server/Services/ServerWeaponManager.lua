@@ -40,7 +40,7 @@ function WeaponManager:CreateStockData(Player:Player)
     };
 
     Player.CharacterAdded:Connect(function(Character:Model)
-        table.clear(Player.CachedAnimations);
+        table.clear(self.Data[Player].CachedAnimations);
 
         for _, AnimationTrack:AnimationTrack in ipairs(PlayerData.LoadedAnimations) do
             AnimationTrack:Destroy();

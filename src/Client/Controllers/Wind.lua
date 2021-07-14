@@ -8,12 +8,12 @@ local Camera = workspace.CurrentCamera or workspace:WaitForChild("Camera");
 local Tag = "WindShake";
 
 local Wind = {
-    Range = 45,
+    Range = 150,
     Noises = {},
     Original = {},
     WindSpeed = 3,
     WindStrength = .1,
-    UpdateStreamDistance = 45/2,
+    UpdateStreamDistance = 150/2,
     WindDirection = CFrame.Angles(0, math.rad(24), 0),
     Streaming = {},
     NoiseLayers = 12

@@ -3,11 +3,13 @@ WeaponHandler.__index = WeaponHandler;
 
 local LoadedAnimationCache = {};
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage");
-local UserInputService = game:GetService("UserInputService");
-local TweenService = game:GetService("TweenService");
 local ContextActionService = game:GetService("ContextActionService");
+local ReplicatedStorage = game:GetService("ReplicatedStorage");
 local CollectionService = game:GetService("CollectionService");
+local UserInputService = game:GetService("UserInputService");
+local ContentProvider = game:GetService("ContentProvider");
+local TweenService = game:GetService("TweenService");
+
 
 local Shared = ReplicatedStorage:WaitForChild("Aero"):WaitForChild("Shared");
 
@@ -17,6 +19,7 @@ local FootstepSounds = require(Shared:WaitForChild("FootstepSounds"));
 local Spring = require(Shared:WaitForChild("Spring"));
 local AudioModule = require(Shared:WaitForChild("AudioModule"));
 local Thread = require(Shared:WaitForChild("Thread"));
+local Signal = require(Shared:WaitForChild("Signal"));
 
 local Player = game:GetService("Players").LocalPlayer;
 
@@ -63,7 +66,8 @@ function WeaponHandler.new(ServerManager)
             },
             ServerManager = ServerManager,
             Spread = 0,
-            Speed = 0
+            Speed = 0,
+            LoadingPercentageUpdated = Signal.new(),
         },
         WeaponHandler
     );
@@ -71,6 +75,23 @@ function WeaponHandler.new(ServerManager)
     local Character = Player.Character;
 
     if (Character) then warn("Character exists"); self:SetCharacter(Character); end;
+
+    Thread.Spawn(function()
+        local ToLoad = {};
+
+        for SoundsName, Sounds in pairs(FootstepSounds.SoundIds) do
+            for _, Sound in ipairs(Sounds) do
+                local SoundInstance:Sound = AudioModule:GetInstanceFromId(Sound); -- * Audio module should cache this now 
+                ToLoad[#ToLoad+1] = SoundInstance;
+            end
+        end
+
+        local LoadedAssets = 0;
+        ContentProvider:PreloadAsync(ToLoad, function(...)
+            LoadedAssets += 1;
+            self.LoadingPercentageUpdated:Fire(#ToLoad/LoadedAssets);
+        end);
+    end)
 
     self.Maid.PlayerCharacterAdded = Player.CharacterAdded:Connect(function(NewCharacter)
         self:SetCharacter(NewCharacter);
@@ -113,7 +134,8 @@ function WeaponHandler:SetCharacter(NewCharacter:Model)
         Camera,
         NewCharacter,
         workspace:WaitForChild("Weapons")
-    }
+    };
+    self.RaycastParams.IgnoreWater = false;
 
     self.ProximityParams = self.ProximityParams or RaycastParams.new();
     table.clear(self.ProximityParams.FilterDescendantsInstances);
@@ -146,6 +168,17 @@ function WeaponHandler:Equip(WeaponName:string)
         warn("Got invalid status from server", Status);
         return;
     end
+
+
+    -- local ToLoad = {};
+    -- for _, Sounds in pairs(FootstepSounds.SoundIds) do
+    --     for _, Sound in ipairs(Sounds) do
+    --         ToLoad[#ToLoad+1] = Sound;
+    --     end
+    -- end
+
+    -- ContentProvider:PreloadAsync(ToLoad);
+    -- ToLoad = nil;
 
     self:Remove();
     self:SetCharacter(self.Character or Player.Character);
@@ -212,6 +245,7 @@ function WeaponHandler:Equip(WeaponName:string)
     end
 
     self.Fired = nil;
+    self.Aiming = false;
 
     self.RaycastParams = self.RaycastParams or RaycastParams.new();
     table.clear(self.RaycastParams.FilterDescendantsInstances);
@@ -539,8 +573,10 @@ function WeaponHandler:Update(DeltaTime:number)
 
     self.JumpingVelocity = self.JumpingVelocity or EmptyCFrame;
 
-    local JumpingVelocity = CFrame.Angles(-math.rad(math.clamp(self.Character.PrimaryPart.Velocity.Y, -35, 35)), 0, 0);
-    self.JumpingVelocity = self.JumpingVelocity:Lerp(JumpingVelocity, clamp(10 * DeltaTime));
+    self.JumpingVelocity = self.JumpingVelocity:Lerp(
+        CFrame.Angles(-math.rad(math.clamp(self.Character.PrimaryPart.Velocity.Y, -35, 35)), 0, 0),
+        clamp(10 * DeltaTime)
+    );
 
     MasterOffset *= self.JumpingVelocity;
 
@@ -556,14 +592,13 @@ function WeaponHandler:Update(DeltaTime:number)
         end
     end
 
-
-
     local AimingInfluence = self.Aiming and (self.WeaponConfig.AimingInfluence or .1) or 1; --> Alternative to lower wobble when aiming
     local GunSwayInfluence = self.WeaponConfig.GunSwayInfluence or .7;
 
+    local computed1, computed2 = self.Speed * (self.Running and 1.2 or 1), DeltaTime * (self.Running and 1.6 or 1);
     local MovementSway = Vector3.new(
-        (GetBobbing(4, 30, self.Speed * (self.Running and 1.2 or 1))) * DeltaTime * (self.Running and 1.6 or 1),
-        ((GetBobbing(8, 15, self.Speed * (self.Running and 1.2 or 1)) * -1)) * DeltaTime  * (self.Running and 1.6 or 1),
+        (GetBobbing(4, 30, computed1) * computed2),
+        (GetBobbing(8, 15, computed1) * -1) * computed2,
         0
     ) * GunSwayInfluence * AimingInfluence;
 
@@ -648,8 +683,9 @@ function WeaponHandler:Footsteps()
 
         local raycast = workspace:Raycast(self.Character.HumanoidRootPart.Position, Vector3.new(0, -8, 0), self.RaycastParams);
         if (raycast) then
+            warn("iojaSoifghsudhgaziahaui");
             self.FloorMaterial = raycast.Material;
-            self.FootstepTable = FootstepSounds:GetTableFromMaterial(self.FloorMaterial);
+            self.FootstepTable = FootstepSounds:GetTableFromMaterial(raycast.Material);
         end
     end
 
@@ -664,9 +700,8 @@ function WeaponHandler:Footsteps()
 
     self.lastPosition = self.Character.HumanoidRootPart.Position;
 
-    AudioModule:GetInstanceFromId(
-        self.FootstepTable[math.random(#self.FootstepTable)]
-    ):Play();
+    -- print(self.Footste   pTable[math.random(#self.FootstepTable)]);
+    AudioModule:GetInstanceFromId(self.FootstepTable[math.random(#self.FootstepTable)]):Play();
 end
 
 return WeaponHandler;

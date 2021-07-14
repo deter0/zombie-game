@@ -7,7 +7,8 @@ local Maid = require(Shared:WaitForChild("Maid"));
 local Thread = require(Shared:WaitForChild("Thread"));
 
 local InputManager = {
-    Maid = Maid.new()
+    Maid = Maid.new(),
+    LoadingPercentage = 0,
 };
 
 function InputManager:Start()
@@ -62,6 +63,10 @@ function InputManager:Start()
 
         ContextActionService:BindAction("equip"..i, Equip, false, self.EnumBinds[i]);
     end
+
+    self.Maid.LoadingPercentageUpdated = self.WeaponHandler.LoadingPercentageUpdated:Connect(function(NewPercent:number)
+        self.LoadingPercentage = NewPercent;
+    end);
 
     self.Maid.Update = RunService.RenderStepped:Connect(function(DeltaTime)
         self.WeaponHandler:Update(DeltaTime);
