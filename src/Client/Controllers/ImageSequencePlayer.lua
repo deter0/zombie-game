@@ -2,48 +2,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage");
 local Shared = ReplicatedStorage:WaitForChild("Aero"):WaitForChild("Shared");
 
 local Thread = require(Shared:WaitForChild("Thread"));
+local Signal = require(Shared:WaitForChild("Signal"));
 
 local ImageSequencePlayer = {};
-local Anim = {
-		"rbxassetid://7096641655",
-		"rbxassetid://7096638713",
-		"rbxassetid://7096637697",
-		"rbxassetid://7096637602",
-		"rbxassetid://7096637496",
-		"rbxassetid://7096637400",
-		"rbxassetid://7096637336",
-		"rbxassetid://7096637265",
-		"rbxassetid://7096637110",
-		"rbxassetid://7096637019",
-		"rbxassetid://7096636953",
-		"rbxassetid://7096636861",
-		"rbxassetid://7096636778",
-		"rbxassetid://7096636699",
-		"rbxassetid://7096636601",
-		"rbxassetid://7096636515",
-		"rbxassetid://7096636445",
-		"rbxassetid://7096636370",
-		"rbxassetid://7096636275",
-		"rbxassetid://7096636203",
-		"rbxassetid://7096636140",
-		"rbxassetid://7096636088",
-		"rbxassetid://7096636020",
-		"rbxassetid://7096635941",
-		"rbxassetid://7096635836",
-		"rbxassetid://7096635746",
-		"rbxassetid://7096635676",
-		"rbxassetid://7096635612",
-		"rbxassetid://7096635545",
-		"rbxassetid://7096635475",
-		"rbxassetid://7096635395",
-		"rbxassetid://7096635323",
-		"rbxassetid://7096635234",
-		"rbxassetid://7096635115",
-		"rbxassetid://7096635017",
-		"rbxassetid://7096634914",
-		"rbxassetid://7096634817"
-	}
-
 
 local Delays_ = {
 	[1] = .3,
@@ -68,6 +29,17 @@ local RunService = game:GetService("RunService");
 local ContentProvider = game:GetService("ContentProvider");
 
 function ImageSequencePlayer:Play(Target, Intervel:number, Images, Delays)
+	local Player = {
+		Loaded = Signal.new(),
+		Stop = function(self)
+			self.Loop = self.Loop and self.Loop:Disconnect() and nil;
+			for _, v in ipairs(self.ImageLabels) do v:Destroy(); end;
+			table.clear(self);
+
+			warn("Stopped gif player");
+		end
+	};
+
 	Thread.Spawn(function()
 		local ImageLabels = {};
 		warn(Images);
@@ -91,8 +63,11 @@ function ImageSequencePlayer:Play(Target, Intervel:number, Images, Delays)
 		local CurrentImg;
 
 		ContentProvider:PreloadAsync(ImageLabels);
-		
-		RunService.Heartbeat:Connect(function()
+		Player.ImageLabels = ImageLabels;
+
+		Player.Loaded:Fire();
+
+		Player.Loop = RunService.Heartbeat:Connect(function()
 			if ((tick() - LastFrameInterval) > (Intervel + (Delays[CurrentIndex] or 0))) then
 				CurrentIndex += 1;
 				CurrentIndex = (CurrentIndex % #Images) + 1;
@@ -112,6 +87,8 @@ function ImageSequencePlayer:Play(Target, Intervel:number, Images, Delays)
 			end
 		end)
 	end)
+
+	return Player;
 end
 
 function ImageSequencePlayer:PlaySpriteSheet(Target:ImageLabel, Interval:number, SpriteSheetId:string, TileSize:Vector2, Tiles:number, NumOfTiles:number, Row:number, Column)

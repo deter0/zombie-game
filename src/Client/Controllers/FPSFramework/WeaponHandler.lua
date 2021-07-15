@@ -89,7 +89,7 @@ function WeaponHandler.new(ServerManager)
         local LoadedAssets = 0;
         ContentProvider:PreloadAsync(ToLoad, function(...)
             LoadedAssets += 1;
-            self.LoadingPercentageUpdated:Fire(#ToLoad/LoadedAssets);
+            self.LoadingPercentageUpdated:Fire(LoadedAssets/#ToLoad);
         end);
     end)
 

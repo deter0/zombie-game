@@ -5,10 +5,13 @@ local Player = PlayerService.LocalPlayer;
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Aero"):WaitForChild("Shared");
 local Maid = require(Shared:WaitForChild("Maid"));
 local Thread = require(Shared:WaitForChild("Thread"));
+local Signal = require(Shared:WaitForChild("Signal"));
 
 local InputManager = {
     Maid = Maid.new(),
     LoadingPercentage = 0,
+    IsLoaded = false,
+    Loaded = Signal.new()
 };
 
 function InputManager:Start()
@@ -66,6 +69,11 @@ function InputManager:Start()
 
     self.Maid.LoadingPercentageUpdated = self.WeaponHandler.LoadingPercentageUpdated:Connect(function(NewPercent:number)
         self.LoadingPercentage = NewPercent;
+
+        if (NewPercent >= 1) then
+            self.IsLoaded = true;
+            self.Loaded:Fire();
+        end
     end);
 
     self.Maid.Update = RunService.RenderStepped:Connect(function(DeltaTime)
