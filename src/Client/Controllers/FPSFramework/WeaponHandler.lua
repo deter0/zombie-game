@@ -145,6 +145,14 @@ function WeaponHandler:SetCharacter(NewCharacter:Model)
         table.unpack(CollectionService:GetTagged("NotCollidable"))
     };
     
+    self.ActiveMaid.NonCollidableObjectAdded = CollectionService:GetInstanceAddedSignal("NotCollidable"):Connect(function()
+        self.ProximityParams.FilterDescendantsInstances = {
+            NewCharacter,
+            Camera,
+            table.unpack(CollectionService:GetTagged("NotCollidable"))
+        };
+    end)
+
     self.ProximityParams.IgnoreWater = true;
 
     self.Humanoid = self.Character:WaitForChild("Humanoid");
@@ -540,30 +548,30 @@ function WeaponHandler:Update(DeltaTime:number)
         end
     end
 
-    -- if (not self.WeaponConfig.DisableProximityPushback) then
-    --     local Backpoint = Camera.CFrame.Position;
-    --     local _, Size = self.Viewmodel:GetBoundingBox();
-    --     Size = Size.Magnitude;
+    if (not self.WeaponConfig.DisableProximityPushback) then
+        local Backpoint = Camera.CFrame.Position;
+        local _, Size = self.Viewmodel:GetBoundingBox();
+        Size = Size.Magnitude;
 
-    --     local ProximityRaycast = workspace:Raycast(
-    --         Backpoint, Camera.CFrame.LookVector * Size, self.ProximityParams
-    --     );
+        local ProximityRaycast = workspace:Raycast(
+            Backpoint, Camera.CFrame.LookVector * 2.4, self.ProximityParams
+        );
 
-    --     local Offset = EmptyCFrame;
+        local Offset = EmptyCFrame;
 
-    --     if (ProximityRaycast) then
-    --         local Distance = (Camera.CFrame.Position - ProximityRaycast.Position).Magnitude;
-    --         Offset = CFrame.new(0, 0, (1-(Distance/Size))*Size);
-    --     end
+        if (ProximityRaycast) then
+            local Distance = (Camera.CFrame.Position - ProximityRaycast.Position).Magnitude;
+            Offset = CFrame.new(0, 0, (1-(Distance/Size))*Size);
+        end
 
-    --     if (not self.ProximityPushbackOffset) then
-    --         self.ProximityPushbackOffset = EmptyCFrame;
-    --     end
+        if (not self.ProximityPushbackOffset) then
+            self.ProximityPushbackOffset = EmptyCFrame;
+        end
 
-    --     self.ProximityPushbackOffset = self.ProximityPushbackOffset:Lerp(Offset, DeltaTime * 5);
+        self.ProximityPushbackOffset = self.ProximityPushbackOffset:Lerp(Offset, DeltaTime * 5);
 
-    --     MasterOffset *= self.ProximityPushbackOffset;
-    -- end
+        MasterOffset *= self.ProximityPushbackOffset;
+    end
 
     self.RunningCFrame = self.RunningCFrame or EmptyCFrame;
     local RunningCFrame =
