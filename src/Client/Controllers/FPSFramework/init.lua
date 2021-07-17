@@ -10,13 +10,14 @@ local Signal = require(Shared:WaitForChild("Signal"));
 local InputManager = {
     Maid = Maid.new(),
     LoadingPercentage = 0,
-    IsLoaded = false,
+    IsLoaded = true,
     Loaded = Signal.new()
 };
 
 function InputManager:Start()
     self.ServerWeaponManager = self.Services.ServerWeaponManager;
-
+    
+    
     self.CurrentWeapon = nil;
     self.EnumBinds = {
         [1] = Enum.KeyCode.One,
@@ -37,15 +38,31 @@ function InputManager:Start()
         game.Loaded:Wait();
     end
     
+    self.FiringManager = require(script:WaitForChild("FiringHandler"));
+    
     self.Weapons = game:GetService("ReplicatedStorage"):WaitForChild("Weapons"):GetChildren();
-    self.WeaponHandler = self.WeaponHandlerClass.new(self.ServerWeaponManager);
+    self.WeaponHandler = self.WeaponHandlerClass.new(self.FiringManager, self.ServerWeaponManager);
     self.Maid.WeaponHandler = self.WeaponHandler;
+
+    self.FiringManager:Start(self.WeaponHandler);
+    self.FiringManager.WeaponManager = self.WeaponHandler;
 
     workspace.Weapons.ChildAdded:Connect(function(Weapon:Model)
         if (Weapon.Name == Player.Name) then
             game:GetService("Debris"):AddItem(Weapon, .001); --> Weird issues with it not working with only :Destroy()
         end
     end)
+
+    self.Maid.LoadingPercentageUpdated = self.WeaponHandler.LoadingPercentageUpdated:Connect(function(NewPercent:number)
+        self.LoadingPercentage = NewPercent;
+
+        print(NewPercent);
+
+        if (NewPercent >= 1) then
+            self.IsLoaded = true;
+            self.Loaded:Fire();
+        end
+    end);
 
     local debounce;
 
@@ -67,17 +84,12 @@ function InputManager:Start()
         ContextActionService:BindAction("equip"..i, Equip, false, self.EnumBinds[i]);
     end
 
-    self.Maid.LoadingPercentageUpdated = self.WeaponHandler.LoadingPercentageUpdated:Connect(function(NewPercent:number)
-        self.LoadingPercentage = NewPercent;
+    print("Loaded");
 
-        if (NewPercent >= 1) then
-            self.IsLoaded = true;
-            self.Loaded:Fire();
-        end
-    end);
-
-    self.Maid.Update = RunService.RenderStepped:Connect(function(DeltaTime)
-        self.WeaponHandler:Update(DeltaTime);
+    Thread.Spawn(function()
+        self.Maid.Update = RunService.RenderStepped:Connect(function(DeltaTime)
+            self.WeaponHandler:Update(DeltaTime);
+        end)
     end)
 end
 

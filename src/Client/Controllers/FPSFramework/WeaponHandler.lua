@@ -52,7 +52,7 @@ local function PlayTweenOnce(Object:Instance, Properties, TweenInformation:Tween
     Tween:Play();
 end
 
-function WeaponHandler.new(ServerManager)
+function WeaponHandler.new(FiringManager, ServerManager)
     local self = setmetatable(
         {
             Maid = Maid.new(),
@@ -65,6 +65,7 @@ function WeaponHandler.new(ServerManager)
                 Camera = Spring:create()
             },
             ServerManager = ServerManager,
+            FiringManager = FiringManager,
             Spread = 0,
             Speed = 0,
             LoadingPercentageUpdated = Signal.new(),
@@ -655,6 +656,8 @@ end
 function WeaponHandler:Fire()
     if (self.Running) then return; end;
 
+    self.FiringManager:Fire(Camera.CFrame.LookVector, self.Weapon.Handle:WaitForChild("Muzzle").WorldPosition);
+    
     self.FireIteration = not self.FireIteration and 1 or self.FireIteration + 1;
 
     for _, ParticleEmitter:ParticleEmitter|Light in ipairs(self.Weapon.Handle:WaitForChild("Muzzle"):GetChildren()) do
@@ -693,7 +696,6 @@ function WeaponHandler:Footsteps()
 
         local raycast = workspace:Raycast(self.Character.HumanoidRootPart.Position, Vector3.new(0, -8, 0), self.RaycastParams);
         if (raycast) then
-            warn("iojaSoifghsudhgaziahaui");
             self.FloorMaterial = raycast.Material;
             self.FootstepTable = FootstepSounds:GetTableFromMaterial(raycast.Material);
         end

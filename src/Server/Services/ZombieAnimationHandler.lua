@@ -12,6 +12,8 @@ local function Lerp(a:number, b:number, alpha:number)
 end
 
 function AnimationHandler:Start()
+	if (true) then return; end;
+	
 	warn("Started the thingy");
 	for AnimationName:string, AnimationId:number in pairs(self.Animations) do
 		local AnimationInstance = Instance.new("Animation");

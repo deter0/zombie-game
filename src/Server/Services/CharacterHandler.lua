@@ -4,7 +4,7 @@ function CharacterHandler:Start()
 	local PlayerService = game:GetService("Players");
 	local CollectionService = game:GetService("CollectionService");
 
-	local CharacterTags = {"NotCollidable"};
+	local CharacterTags = {"PlayerCharacter"};
 
 	PlayerService.PlayerAdded:Connect(function(Player)
 		coroutine.wrap(function()
