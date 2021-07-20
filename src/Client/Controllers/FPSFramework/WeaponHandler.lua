@@ -26,7 +26,7 @@ local Player = game:GetService("Players").LocalPlayer;
 local Camera = workspace.CurrentCamera or workspace:WaitForChild("Camera");
 
 local function GetBobbing(Addition:number, Modifier:number, Speed:number)
-    return math.sin(os.clock() * Addition * (Speed or 0)) * Modifier;
+    return math.sin(time() * Addition * (Speed or 0)) * Modifier;
 end
 
 local function Lerp(a:number, b:number, alpha:number)
@@ -401,7 +401,7 @@ function WeaponHandler:FirePrime()
         self:PlayAnimation("Firing", .3);
         self:Fire();
         if (self.WeaponConfig.Pumping) then self:Pump(); end;
-        self.Fired = os.clock();
+        self.Fired = time();
     else
         self.Firing = true;
     end
@@ -411,9 +411,9 @@ function WeaponHandler:FireActionCalled(_, State)
     if (State == Enum.UserInputState.Begin) then
         if (not self.Weapon) then return; end;
         if (not self.ServerManager) then return; end;
-        if (not self.WeaponConfig or not self.WeaponConfig.FireRate) then warn("Returing"); return; end;
+        if (not self.WeaponConfig or not self.WeaponConfig.FireRate) then warn("Returning"); return; end;
 
-        if (not self.Fired or (os.clock() - self.Fired) >= (60/self.WeaponConfig.FireRate)) then
+        if (not self.Fired or (time() - self.Fired) >= (60/self.WeaponConfig.FireRate)) then
             self:FirePrime();
         end
     elseif (State == Enum.UserInputState.End) then
@@ -513,6 +513,7 @@ local function clamp(x:number)
 end
 
 function WeaponHandler:Update(DeltaTime:number)
+    debug.profilebegin("WeaponHandler:Update");
     if (not self.Equipped) then return; end;
     if (not self.WeaponConfig) then
         self.WeaponConfig = require(self.Weapon:WaitForChild("Config"));
@@ -528,9 +529,9 @@ function WeaponHandler:Update(DeltaTime:number)
     if (not self.Character or not self.Character.PrimaryPart) then print("no primary part or character, exiting."); return; end;
 
     -- print(self.Firing);
-    if (self.Firing and (not self.Fired or ((os.clock() - self.Fired) >= (60/self.WeaponConfig.FireRate)))) then
+    if (self.Firing and (not self.Fired or ((time() - self.Fired) >= (60/self.WeaponConfig.FireRate)))) then
         self:Fire();
-        self.Fired = os.clock();
+        self.Fired = time();
     end
 
     UserInputService.MouseIconEnabled = false;
@@ -668,6 +669,8 @@ function WeaponHandler:Update(DeltaTime:number)
 
     AimingInfluence = nil;
     GunSwayInfluence = nil;
+
+    debug.profileend();
 end
 
 function WeaponHandler:Fire()

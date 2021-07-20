@@ -41,6 +41,7 @@ end
 
 local VERY_FAR = Vector3.new(-1e6, 1e6, 0);
 function FiringHandler:ReturnBullet(Bullet) -- ? Over engineered?
+	print("Returned bullet", Bullet);
 	if (Bullet) then
 		Bullet.Position = VERY_FAR;
 		-- delay(1, function()
@@ -64,7 +65,7 @@ function FiringHandler:CanRayPierce(Cast, RaycastResult, ...) -- TODO
 
 			if (Humanoid.Health > 0) then
 				Thread.SpawnNow(function()
-					local Damage = Events:WaitForChild("Shot"):InvokeServer(Cast.UserData, Humanoid.Parent, RaycastResult);
+					local Damage = Events:WaitForChild("Shot"):InvokeServer(Cast.UserData, Humanoid.Parent, RaycastResult.Position);
 
 					if (Damage) then
 						Hitmarker:Hit(RaycastResult.Position, Damage);

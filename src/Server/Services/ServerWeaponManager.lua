@@ -1,9 +1,12 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage");
 
-local Weapons = game:GetService("ReplicatedStorage"):WaitForChild("Weapons");
+local Weapons = game:GetService("ServerStorage"):WaitForChild("Weapons");
 local FastCast = require(ReplicatedStorage:WaitForChild("FastCast"));
 
 local Events = ReplicatedStorage:WaitForChild("Events");
+local Shared = ReplicatedStorage:WaitForChild("Aero"):WaitForChild("Shared");
+
+local Thread = require(Shared:WaitForChild("Thread"));
 
 local PlayerService = game:GetService("Players");
 
@@ -37,7 +40,7 @@ function WeaponManager:Start()
         return x * x * (3 - 2 * x);
     end
 
-    Events:WaitForChild("Shot").OnServerInvoke = (function(Player:Player, CastUserData, Character:Model, RaycastResults:RaycastResults)
+    Events:WaitForChild("Shot").OnServerInvoke = (function(Player:Player, CastUserData, Character:Model, HitPosition:Vector3)
         local PlayerData = self:GetPlayerData(Player);
 
         print(CastUserData);
@@ -48,7 +51,7 @@ function WeaponManager:Start()
             --     return;
             -- end
             
-            PlayerData.LastShot = os.clock();
+            PlayerData.LastShot = time();
             
             local Humanoid = Character:FindFirstChildWhichIsA("Humanoid");
 
@@ -63,12 +66,16 @@ function WeaponManager:Start()
                 Damage *= math.clamp((5-((CastUserData.Hits and CastUserData.Hits - 1) or 0))/5, 0.1, 1);
                 -- Damage *= 
 
-                local DistancePercentage = (Distance/PlayerData.WeaponConfig.CastingConfig.BulletMaxDist);
+                local DistancePercentage = (Distance/PlayerData.WeaponConfig.CastingConfig.BulletMaxDist); -- Damage drop off over distance
                 local Falloff = 1 - (DistancePercentage ^ 2 * (3 - 2 * DistancePercentage));
-
                 Damage *= Falloff;
 
                 Humanoid:TakeDamage(Damage);
+
+                Thread.Spawn(function()
+                    Events:WaitForChild("BloodEffect"):FireAllClients(HitPosition, Character);
+                end)
+
                 return Damage;
             end
         end

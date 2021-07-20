@@ -29,7 +29,7 @@ function BloodHandler:Start()
     self.CastParams.FilterType = Enum.RaycastFilterType.Blacklist;
     self.CastParams.FilterDescendantsInstances = CollectionService:GetTagged("NotCollidable");
 
-    self.BloodProvider = PartCacheModule.new(ParticlesFolder:WaitForChild("BloodHighFidelity"):WaitForChild("BloodPart"), 125, workspace:WaitForChild("Blood"));
+    self.BloodProvider = PartCacheModule.new(ParticlesFolder:WaitForChild("BloodHighFidelity"):WaitForChild("BloodPart"), 30, workspace:WaitForChild("Blood"));
 
     self.CastBehavior = Fastcast.newBehavior();
     self.CastBehavior.RaycastParams = self.CastParams;
@@ -56,8 +56,8 @@ function BloodHandler:Start()
         self:OnBloodRayUpdated(...);
     end);
 
-	Events:WaitForChild("BloodEffect").OnClientEvent:Connect(function(Position:Vector3)
-        self:CastBlood(Position);
+	Events:WaitForChild("BloodEffect").OnClientEvent:Connect(function(...)
+        self:CastBlood(...);
     end)
 
     -- game:GetService("ContextActionService"):BindAction("Clickity click click", function(_, State)
@@ -69,30 +69,31 @@ function BloodHandler:Start()
 end
 
 local AllBones = {"l1", "l2", "l3", "l4", "r1", "r2", "r3", "r4"};
-function BloodHandler:MakeParticle(Position:Vector3, Normal:Vector3)
+function BloodHandler:MakeParticle(Position:Vector3, Normal:Vector3, Ignore)
+    
     local BloodModel = ParticlesFolder:WaitForChild("BloodHighFidelity"):WaitForChild("BloodRigged"):Clone();
 
     local NormalCFrame = CFrame.lookAt(Vector3.new(), Normal);
-    BloodModel.PrimaryPart.CFrame = CFrame.fromMatrix(Position + (Normal * 2), Normal, NormalCFrame.RightVector, NormalCFrame.UpVector) * CFrame.Angles(0, 0, math.rad(90)); -- to lazy for fromMatrix cuz i forgot how to use it
-    BloodModel.PrimaryPart.Size *= .7 + math.random();
+    BloodModel.PrimaryPart.CFrame = CFrame.fromMatrix(Position, Normal, NormalCFrame.RightVector, NormalCFrame.UpVector) * CFrame.Angles(0, 0, math.rad(90)); -- to lazy for fromMatrix cuz i forgot how to use it
+    BloodModel.PrimaryPart.Size *= .3 + math.random();
 
     BloodModel.PrimaryPart.CFrame *= CFrame.Angles(0, math.random()*(math.pi*2), 0);
 
-    self.CastParams.FilterDescendantsInstances = CollectionService:GetTagged("NotCollidable");
+    print(Ignore);
 
-    for _, BoneName in ipairs(AllBones) do
-        local Bone = BloodModel.PrimaryPart:FindFirstChild(BoneName);
+    -- for _, BoneName in ipairs(AllBones) do
+    --     local Bone = BloodModel.PrimaryPart:FindFirstChild(BoneName);
 
-        if (Bone) then
-            local RaycastDown = workspace:Raycast(Bone.WorldPosition, (Bone.WorldPosition - (CFrame.new(Bone.WorldPosition) * CFrame.new(0, -10, 0)).Position).Unit * -12, self.CastParams);
+    --     if (Bone) then
+    --         local RaycastDown = workspace:Raycast(Bone.WorldPosition, (Bone.WorldPosition - (CFrame.new(Bone.WorldPosition) * CFrame.new(0, -10, 0)).Position).Unit * -12, self.CastParams);
 
-            if (RaycastDown) then
-                Bone.WorldPosition = (CFrame.new((RaycastDown.Position)) * CFrame.new(0, .1, 0)).Position;
-            end
-        else
-            warn(BoneName, "Not found");
-        end
-    end
+    --         if (RaycastDown) then
+    --             Bone.WorldPosition = (CFrame.new((RaycastDown.Position)) * CFrame.new(0, .1, 0)).Position;
+    --         end
+    --     else
+    --         warn(BoneName, "Not found");
+    --     end
+    -- end
 
     game:GetService("Debris"):AddItem(BloodModel, 60);
 
@@ -101,17 +102,25 @@ function BloodHandler:MakeParticle(Position:Vector3, Normal:Vector3)
 end
 
 local TAU = math.pi * 2;
-function BloodHandler:RawCast(Position:Vector3)
+function BloodHandler:RawCast(Position:Vector3, Ignore)
     local RandomDirection = math.random() * TAU;
     local Direction = Vector3.new(math.sin(RandomDirection), math.random()/3+.3, math.cos(RandomDirection));
 
-    local Blood = self.Caster:Fire(Position, Direction, Direction * math.random(40, 50), self.CastBehavior);
+    self.CastParams.FilterDescendantsInstances = {
+        table.unpack(CollectionService:GetTagged("NotCollidable")),
+        Ignore
+    };
+
+    self.CastBehavior.CastParams = self.CastParams;
+    local Blood = self.Caster:Fire(Position, Direction, Direction * math.random(4, 10), self.CastBehavior);
+    Blood.UserData.Ignore = Ignore;
+
     -- warn("Can do stuff with blood", Blood);
 end
 
 function BloodHandler:OnBloodCastHit(Cast, RaycastResult, SegmentVelocity, BloodObject)
-    -- warn("Blood hit something !!!", RaycastResult);
-    self:MakeParticle(RaycastResult.Position, RaycastResult.Normal);
+    warn("Blood hit something !!!", RaycastResult.Instance);
+    self:MakeParticle(RaycastResult.Position, RaycastResult.Normal, Cast.UserData.Ignore);
 end
 
 
@@ -140,10 +149,9 @@ function BloodHandler:OnRayTerminated(Cast)
     end
 end
 
-function BloodHandler:CastBlood(Position:Vector3)
-    self.CastParams.FilterDescendantsInstances = CollectionService:GetTagged("NotCollidable");
+function BloodHandler:CastBlood(Position:Vector3, Ignore)
     for _ = 1, 8 do
-        self:RawCast(Position);
+        self:RawCast(Position, Ignore);
     end
 end
 

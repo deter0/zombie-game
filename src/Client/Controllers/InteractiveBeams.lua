@@ -46,10 +46,10 @@ function InteractiveBeams:Update()
         if (Raycast) then
             local PercentDistance = (Beam.Attachment0.WorldPosition - Raycast.Position).Magnitude / Distance;
 
-            Beam.Segments = 10;
+            Beam.Segments = 4;
 
             Beam.Transparency = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, .75),
+                NumberSequenceKeypoint.new(0, 0),
                 NumberSequenceKeypoint.new(PercentDistance, 1),
                 NumberSequenceKeypoint.new(1, 1)
             });
@@ -57,7 +57,7 @@ function InteractiveBeams:Update()
             Beam.Segments = 1;
 
             Beam.Transparency = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, .75),
+                NumberSequenceKeypoint.new(0, 0),
                 NumberSequenceKeypoint.new(1, 1)
             });
         end

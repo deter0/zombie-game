@@ -131,7 +131,7 @@ function Pathfinder:Compute() -- ! Deprecated & Incomplete see method :AStar ins
 
 	if (not game:IsLoaded()) then game.Loaded:Wait(); end;
 
-	local start = os.clock();
+	local start = time();
 	local nodeCount = 0;
 
 	for x = 1, self.Bounds, self.Distance do
@@ -206,7 +206,7 @@ function Pathfinder:Compute() -- ! Deprecated & Incomplete see method :AStar ins
 		end
 	end
 
-	print(string.format("Made %d nodes in %s seconds.", nodeCount, os.clock() - start));
+	print(string.format("Made %d nodes in %s seconds.", nodeCount, time() - start));
 
 	local average = 0;
 	local toAverageCount = 0;

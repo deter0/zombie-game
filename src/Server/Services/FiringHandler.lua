@@ -19,8 +19,7 @@ function FiringHandler:GetBullets(Player:Player)
 	local PlayerDirectory = Base64:Encode(tostring(Player.UserId));
 	local PlayerBulletDirectory = BulletsDirectory:FindFirstChild(PlayerDirectory);
 
-	CollectionService:AddTag(PlayerBulletDirectory, "PlayerBulletDirectory");
-
+	
 	if (not PlayerBulletDirectory) then
 		PlayerBulletDirectory = Instance.new("Model");
 		PlayerBulletDirectory.Name = PlayerDirectory;
@@ -28,6 +27,7 @@ function FiringHandler:GetBullets(Player:Player)
 	end
 	
 	PlayerBulletDirectory.Parent = BulletsDirectory;
+	CollectionService:AddTag(PlayerBulletDirectory, "PlayerBulletDirectory");
 	
 	local NumOfBullets = #PlayerBulletDirectory:GetChildren();
 	
@@ -36,6 +36,7 @@ function FiringHandler:GetBullets(Player:Player)
 		for ind = 1, BulletsToHandle do
 			warn("Creating bullet!!");
 			local Bullet = self:CreateBullet();
+			Bullet.Name = ind;
 			CollectionService:AddTag(Bullet, "Bullet");
 			Bullet.Parent = PlayerBulletDirectory;
 			print("Set parent", Bullet, Bullet.Parent);
@@ -67,12 +68,16 @@ function FiringHandler:CreateBullet() -- ?
 	Bullet.Color = YELLOW;
 	Bullet.Position = VERY_FAR;
 	Bullet.CanCollide = false;
+	CollectionService:AddTag(Bullet, "Bullet");
 
 	return Bullet;
 end
 
 function FiringHandler:SetBullets(Player, BulletsContainer)
-	if (CollectionService:HasTag(BulletsContainer, "BulletsContainer")) then
+	print("did thing", BulletsContainer, CollectionService:GetTags(BulletsContainer));
+	
+	if (CollectionService:HasTag(BulletsContainer, "PlayerBulletDirectory")) then
+		print("has tag");
 		BulletsContainer.Parent = workspace:WaitForChild("Bullets");
 
 		for _, Bullet in ipairs(BulletsContainer:GetChildren()) do
@@ -97,11 +102,11 @@ function FiringHandler:Start()
 		return self:SetBullets(...);
 	end
 
-	PlayerService.PlayerRemoving:Connect(function(Player)
+	PlayerService.PlayerRemoving:Connect(coroutine.wrap(function(Player)
 		local PlayerDirectory = Base64:Encode(tostring(Player.UserId));
-		local PlayerBulletDirectory = BulletsDirectory:FindFirstChild(PlayerDirectory);
+		local PlayerBulletDirectory = workspace:WaitForChild("Bullets"):FindFirstChild(PlayerDirectory);
 		PlayerBulletDirectory:Destroy();
-	end)
+	end));
 
 	return;
 end
