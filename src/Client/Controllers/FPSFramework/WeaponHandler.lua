@@ -138,6 +138,12 @@ function WeaponHandler:SetCharacter(NewCharacter:Model)
     };
     self.RaycastParams.IgnoreWater = false;
 
+    if (self.Equipped) then
+        warn("Sent request to server");
+
+        self.ServerManager:Equipped(self.Equipped);
+    end
+
     self.ProximityParams = self.ProximityParams or RaycastParams.new();
     table.clear(self.ProximityParams.FilterDescendantsInstances);
     self.ProximityParams.FilterDescendantsInstances = {
@@ -218,6 +224,11 @@ function WeaponHandler:Equip(WeaponName:string)
     end
 
     self.LoadedAnimations = {};
+
+    self:StopAnimation("Running", .3);
+    self.Humanoid.WalkSpeed = 16;
+
+    self.Running = false;
 
     self.Weapon = ReplicatedStorage.Cache:FindFirstChild(WeaponName) or ReplicatedStorage:WaitForChild("Weapons"):FindFirstChild(WeaponName);
     local WasWeaponCached = self.Weapon.Parent.Name == "Cache";
@@ -386,10 +397,14 @@ function WeaponHandler:UnbindActions()
 end
 
 function WeaponHandler:FirePrime()
-    self:PlayAnimation("Firing", .3);
-    self:Fire();
-    if (self.WeaponConfig.Pumping) then self:Pump(); end;
-    self.Fired = os.clock();
+    if (self.WeaponConfig.FireMode ~= 1) then
+        self:PlayAnimation("Firing", .3);
+        self:Fire();
+        if (self.WeaponConfig.Pumping) then self:Pump(); end;
+        self.Fired = os.clock();
+    else
+        self.Firing = true;
+    end
 end
 
 function WeaponHandler:FireActionCalled(_, State)
@@ -512,8 +527,10 @@ function WeaponHandler:Update(DeltaTime:number)
 
     if (not self.Character or not self.Character.PrimaryPart) then print("no primary part or character, exiting."); return; end;
 
-    if (self.Automatic and self.Firing and (not self.Fired or ((os.clock() - self.Fired) >= (60/self.WeaponConfig.FireRate)))) then
-        self:FirePrime();
+    -- print(self.Firing);
+    if (self.Firing and (not self.Fired or ((os.clock() - self.Fired) >= (60/self.WeaponConfig.FireRate)))) then
+        self:Fire();
+        self.Fired = os.clock();
     end
 
     UserInputService.MouseIconEnabled = false;

@@ -1,12 +1,14 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage");
-local Weapons = game:GetService("ServerStorage"):WaitForChild("Weapons");
+
+local Weapons = game:GetService("ReplicatedStorage"):WaitForChild("Weapons");
 local FastCast = require(ReplicatedStorage:WaitForChild("FastCast"));
+
+local Events = ReplicatedStorage:WaitForChild("Events");
 
 local PlayerService = game:GetService("Players");
 
 local WeaponManager = {
     Client = {},
-    Caster = FastCast.new(),
     Data = {}
 };
 
@@ -25,6 +27,51 @@ function WeaponManager:Start()
 
         self.Data[Player] = nil;
         PlayerData = nil;
+    end)
+
+    --@ https://en.wikipedia.org/wiki/Smoothstep
+    local function SmoothStep(edge0:number, edge1:number, x:number)
+        -- Scale, bias and saturate x to 0..1 range
+        x = math.clamp((x - edge0) / (edge1 - edge0), 0, 1); 
+        -- Evaluate polynomial
+        return x * x * (3 - 2 * x);
+    end
+
+    Events:WaitForChild("Shot").OnServerInvoke = (function(Player:Player, CastUserData, Character:Model, RaycastResults:RaycastResults)
+        local PlayerData = self:GetPlayerData(Player);
+
+        print(CastUserData);
+
+        if (Character and PlayerData.WeaponConfig) then
+            -- if (PlayerData.LastShot and (os.clock() - PlayerData.LastShot) < 60/PlayerData.WeaponConfig.FireRate) then
+            --     print("Player shot too early"); -- TODO: Cheat detection
+            --     return;
+            -- end
+            
+            PlayerData.LastShot = os.clock();
+            
+            local Humanoid = Character:FindFirstChildWhichIsA("Humanoid");
+
+            if (Humanoid) then
+                local Distance = (CastUserData.RayOrigin - Character.PrimaryPart.Position).Magnitude;
+                if (Distance > (PlayerData.WeaponConfig.CastingConfig.BulletMaxDist + 25)) then -- Error margin of 25 just because
+                    print("Player shot too far"); -- TODO: Cheat detection
+                    return;
+                end
+
+                local Damage = PlayerData.WeaponConfig.Damage or 0;
+                Damage *= math.clamp((5-((CastUserData.Hits and CastUserData.Hits - 1) or 0))/5, 0.1, 1);
+                -- Damage *= 
+
+                local DistancePercentage = (Distance/PlayerData.WeaponConfig.CastingConfig.BulletMaxDist);
+                local Falloff = 1 - (DistancePercentage ^ 2 * (3 - 2 * DistancePercentage));
+
+                Damage *= Falloff;
+
+                Humanoid:TakeDamage(Damage);
+                return Damage;
+            end
+        end
     end)
 end
 
@@ -54,13 +101,15 @@ end
 
 function WeaponManager:EquipWeapon(Player:Player, WeaponName:string)
     if (not Player.Character or not Player.Character.PrimaryPart or not Player.Character:FindFirstChild("Humanoid")) then return 400; end;
-
+    
     local PlayerData = self:GetPlayerData(Player);
     local Weapon:Model = Weapons:FindFirstChild(WeaponName);
-
+    
     if (not Weapon) then
         return 404;
     end
+
+    -- if (WeaponName == PlayerData.Equipped) then return 200; end;
 
     Weapon = Weapon:Clone();
     Weapon:WaitForChild("Handle").CFrame = CFrame.new(10000, 10000, 10000);
@@ -68,6 +117,7 @@ function WeaponManager:EquipWeapon(Player:Player, WeaponName:string)
 
     Weapon.Parent = workspace.Weapons;
 
+    PlayerData.Equipped = WeaponName;
     PlayerData.Weapon = Weapon;
     PlayerData.Maid.Weapon = Weapon;
 

@@ -60,9 +60,9 @@ local YELLOW = Color3.new(1, 0.901960, 0.462745);
 local VERY_FAR = Vector3.new(-1e6, 1e6, 0);
 
 function FiringHandler:CreateBullet() -- ?
-	local Bullet = Instance.new("Part");
+	local Bullet:Part = Instance.new("Part");
 
-	Bullet.Size = Vector3.new(0.25, 0.25, 2.4);
+	Bullet.Size = Vector3.new(0.25, 0.25, 4.4);
 	Bullet.Material = NEON;
 	Bullet.Color = YELLOW;
 	Bullet.Position = VERY_FAR;

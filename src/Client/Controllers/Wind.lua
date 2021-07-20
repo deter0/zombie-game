@@ -8,15 +8,15 @@ local Camera = workspace.CurrentCamera or workspace:WaitForChild("Camera");
 local Tag = "WindShake";
 
 local Wind = {
-    Range = 150,
+    Range = 90,
     Noises = {},
     Original = {},
     WindSpeed = 3,
     WindStrength = .1,
-    UpdateStreamDistance = 150/2,
-    WindDirection = CFrame.Angles(0, math.rad(24), 0),
+    UpdateStreamDistance = 50,
+    WindDirection = CFrame.Angles(0, 0, 0),
     Streaming = {},
-    NoiseLayers = 12
+    NoiseLayers = 7
 };
 
 function Wind:UpdateStream(CameraPosition)
@@ -26,10 +26,12 @@ function Wind:UpdateStream(CameraPosition)
         if (index % 300 == 0) then RunService.Heartbeat:Wait(); end;
 
         if (TaggedPart:IsA("BasePart")) then
+            TaggedPart.CanCollide = false;
+
             local Distance = (CameraPosition - (TaggedPart.Position)).Magnitude;
 
             if (Distance <= self.Range) then
-                self.Streaming[#self.Streaming+1] = TaggedPart;
+                self.Streaming[#self.Streaming + 1] = TaggedPart;
             elseif (self.Original[TaggedPart]) then
                 TaggedPart.CFrame = self.Original[TaggedPart];
                 self.Original[TaggedPart] = nil;
@@ -85,7 +87,7 @@ function Wind:Start()
     
         for index, Part in ipairs(self.Streaming) do
             local WindNoise = self.Noises[(index % self.NoiseLayers) + 1];
-            local WindNoise2 = self.Noises[((index - 1) % self.NoiseLayers) + 1] * .9;
+            local WindNoise2 = self.Noises[((index - 1) % self.NoiseLayers) + 1];
 
             if (not self.Original[Part]) then
                 self.Original[Part] = Part.CFrame;

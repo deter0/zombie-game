@@ -19,14 +19,14 @@ return function(Cast, RaycastResult:RaycastResult, SegmentVelocity)
 	if (RaycastResult.Instance:IsA("BasePart")) then
 		local Size = (RaycastResult.Instance.Size * RaycastResult.Normal).Magnitude;
 
-		if (Size > 25) then return false; end;
+		if (Size >= 25) then return false; end;
 
 		local OpposingRaycast = workspace:Raycast(RaycastResult.Position + (Direction * Size * 2), -(Direction * Size * 2));
 
 		if (OpposingRaycast) then
 			local RayCoverage = (RaycastResult.Position - OpposingRaycast.Position).Magnitude * (MaterialAffectors[OpposingRaycast.Material] or 1);
 
-			print(RayCoverage);
+			print(RayCoverage, RayCoverage <= 2);
 
 			return (RayCoverage <= 2);
 		end

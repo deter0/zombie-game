@@ -25,7 +25,7 @@ function CharacterOrientationController:Start()
 		for _, Part in ipairs(workspace.CharacterOrientations:GetChildren()) do
 			local Player = PlayerService:GetPlayerByUserId(tonumber(Part.Name));
 
-			if (Player and Player.Character and Player.Character:FindFirstChild("UpperTorso")) then
+			if (Player and Player.Character and Player.Character:FindFirstChild("UpperTorso") and Player.Character.UpperTorso:FindFirstChild("Waist")) then
 				local UpperTorso = Player.Character.UpperTorso.Waist;
 
 				if (not Original[Player.Name]) then Original[Player.Name] = UpperTorso.C0; end;

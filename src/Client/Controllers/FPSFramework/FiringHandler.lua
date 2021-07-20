@@ -3,8 +3,14 @@ local Shared = ReplicatedStorage:WaitForChild("Aero"):WaitForChild("Shared");
 
 local Thread = require(Shared:WaitForChild("Thread"));
 local Base64 = require(Shared:WaitForChild("Base64"));
+
 local CanRayPierce = require(Shared:WaitForChild("CanRayPierce"));
 local FastCast = require(ReplicatedStorage:WaitForChild("FastCast"));
+
+local Hitmarker = require(Shared:WaitForChild("Hitmarker"));
+
+FastCast.VisualizeCasts = false;
+FastCast.DebugLogging = false;
 
 local Events = ReplicatedStorage:WaitForChild("Events");
 
@@ -20,7 +26,7 @@ local FiringHandler = {
 };
 
 function FiringHandler:GetBullet()
-	warn("Trying to get bullet", self.Bullets, self.BulletsInUse);
+	-- warn("Trying to get bullet", self.Bullets, self.BulletsInUse);
 	local Bullet = self.Bullets[((self.BulletsInUse + 1) % #self.Bullets) + 1];
 
 	if (not Bullet) then
@@ -49,15 +55,26 @@ function FiringHandler:CanRayPierce(Cast, RaycastResult, ...) -- TODO
 
 	Cast.UserData.Damaged = Cast.UserData.Damaged or {};
 
-	
 	if (CanPierce and not Cast.UserData.Damaged[RaycastResult.Instance.Parent]) then
 		local Humanoid = RaycastResult.Instance.Parent:FindFirstChild("Humanoid");
 
 		if (Humanoid) then
 			Cast.UserData.Damaged[RaycastResult.Instance.Parent] = true;
-			Events:WaitForChild("Shot"):FireServer(Cast.UserData.RaycastOrigin, Cast.UserData.RaycastDirection);
+			print("Do damage here");
+
+			if (Humanoid.Health > 0) then
+				Thread.SpawnNow(function()
+					local Damage = Events:WaitForChild("Shot"):InvokeServer(Cast.UserData, Humanoid.Parent, RaycastResult);
+
+					if (Damage) then
+						Hitmarker:Hit(RaycastResult.Position, Damage);
+					end
+				end)
+			end
 		end
 	end
+
+	return CanPierce;
 end
 
 local TAU = math.pi * 2;
@@ -76,9 +93,10 @@ function FiringHandler:Fire(Direction:Vector3, MuzzlePosition:Vector3) -- TODO
 		return;
 	end
 
-	self.CastBehavior.Acceleration = self.WeaponCastingConfig.BulletGravity or Vector3.new(0, -workspace.Gravity, 0);
-	self.CastBehavior.MaxDistance = self.WeaponCastingConfig.MaxDistance or 400;
-	self.CastBehavior.CanPierceFunction = self.WeaponCastingConfig.CanPierceFunction or function(...)
+	local Behaviour = false;
+	self.CastBehaviour.Acceleration = self.WeaponCastingConfig.BulletGravity or Vector3.new(0, -workspace.Gravity, 0);
+	self.CastBehaviour.MaxDistance = self.WeaponCastingConfig.MaxDistance or 400;
+	self.CastBehaviour.CanPierceFunction = self.WeaponCastingConfig.CanPierceFunction or function(...)
 		return self:CanRayPierce(...);
 	end;
 
@@ -95,7 +113,7 @@ function FiringHandler:Fire(Direction:Vector3, MuzzlePosition:Vector3) -- TODO
 			)
 		).LookVector;
 
-		local Cast = self.Caster:Fire(MuzzlePosition, NewDirection, self.WeaponCastingConfig.BulletSpeed, self.CastBehavior);
+		local Cast = self.Caster:Fire(MuzzlePosition, NewDirection, self.WeaponCastingConfig.BulletSpeed, self.CastBehaviour);
 
 		local Bullet = self:GetBullet();
 
@@ -113,7 +131,7 @@ function FiringHandler:OnRayHit(Cast, RaycastResult) -- TODO
 	if (RaycastResult.Instance.Parent:FindFirstChild("Humanoid")) then
 		-- RaycastResult.Instance.Parent:FindFirstChild("Humanoid"):TakeDamage(15);
 	end
-	print("Ray hit something -----", RaycastResult.Instance);
+	-- print("Ray hit something -----", RaycastResult.Instance);
 end
 
 function FiringHandler:OnRayTerminated(Cast) -- TODO
@@ -138,7 +156,7 @@ end
 
 function FiringHandler:CreateCaster()
 	self.Caster = FastCast.new();
-	self.CastBehavior = FastCast.newBehavior();
+	self.CastBehaviour = FastCast.newBehavior();
 
 	local CollectionService = game:GetService("CollectionService");
 
@@ -157,9 +175,9 @@ function FiringHandler:CreateCaster()
 		};
 	end);
 
-	self.CastBehavior.RaycastParams = RaycastParams;
-	self.CastBehavior.HighFidelityBehavior = FastCast.HighFidelityBehavior.Default;
-	self.CastBehavior.Acceleration = Vector3.new(0, -workspace.Gravity, 0);
+	self.CastBehaviour.RaycastParams = RaycastParams;
+	self.CastBehaviour.HighFidelityBehavior = FastCast.HighFidelityBehavior.Default;
+	self.CastBehaviour.Acceleration = Vector3.new(0, -workspace.Gravity, 0);
 
 	self.Caster.RayHit:Connect(function(...)
 		self:OnRayHit(...);

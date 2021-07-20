@@ -19,8 +19,6 @@ function CharacterOrientationReplicator:Start()
 			Part.Parent = workspace:WaitForChild("CharacterOrientations");
 
 			Part:SetNetworkOwner(Player);
-
-			warn("SETTT");
 		end)();
 	end)
 end
