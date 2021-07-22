@@ -28,7 +28,7 @@ local Delays_ = {
 local RunService = game:GetService("RunService");
 local ContentProvider = game:GetService("ContentProvider");
 
-function ImageSequencePlayer:Play(Target, Intervel:number, Images, Delays)
+function ImageSequencePlayer:Play(Target, Interval:number, Images, Delays)
 	local Player = {
 		Loaded = Signal.new(),
 		Stop = function(self)
@@ -68,7 +68,7 @@ function ImageSequencePlayer:Play(Target, Intervel:number, Images, Delays)
 		Player.Loaded:Fire();
 
 		Player.Loop = RunService.Heartbeat:Connect(function()
-			if ((tick() - LastFrameInterval) > (Intervel + (Delays[CurrentIndex] or 0))) then
+			if ((tick() - LastFrameInterval) > (Interval + (Delays[CurrentIndex] or 0))) then
 				CurrentIndex += 1;
 				CurrentIndex = (CurrentIndex % #Images) + 1;
 				
@@ -91,7 +91,7 @@ function ImageSequencePlayer:Play(Target, Intervel:number, Images, Delays)
 	return Player;
 end
 
-function ImageSequencePlayer:PlaySpriteSheet(Target:ImageLabel, Interval:number, SpriteSheetId:string, TileSize:Vector2, Tiles:number, NumOfTiles:number, Row:number, Column)
+function ImageSequencePlayer:PlaySpriteSheet(Target:ImageLabel, Interval:number, SpriteSheetId:string, TileSize:Vector2, Tiles:number, NumOfTiles:number, Row:number, Column) -- ! Doesn't work/ incomplete
 	Target.ImageRectSize = TileSize;
 	
 	ContentProvider:PreloadAsync({SpriteSheetId});

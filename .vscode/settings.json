@@ -1,13 +1,12 @@
 {
-  "files.exclude": {
-    "src/_framework/": true,
-    ".vscode": true
-  },
-  "Lua.diagnostics.ignore": [
-    "LowerAngle",
-    "SetSize"
-  ],
-  "Lua.diagnostics.disable": [
-    "redundant-parameter"
-  ]
+	"files.exclude": {
+		"src/_framework/": true,
+		".vscode": true
+	},
+	"Lua.diagnostics.ignore": ["LowerAngle", "SetSize"],
+	"Lua.diagnostics.disable": [
+		"redundant-parameter",
+		"incorrect-call-arguments"
+	],
+	"cSpell.words": ["qwertyuiopasdfghjklzxcvbnm"]
 }

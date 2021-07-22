@@ -65,7 +65,7 @@ function InventoryController:GetHoveringSlot(DragOffset:Vector2)
 	local MouseLocation:Vector2 = UserInputService:GetMouseLocation() + self.DragOffset;
 
 	for _, InventorySlot in ipairs(self.InventorySlots) do
-		if (Interesecting(MouseLocation.X, MouseLocation.Y, InventorySlot.Gui.AbsolutePosition, InventorySlot.Gui.AbsoluteSize)) then
+		if (Interesecting(MouseLocation.X + DragOffset.X, MouseLocation.Y + DragOffset.Y, InventorySlot.Gui.AbsolutePosition, InventorySlot.Gui.AbsoluteSize)) then
 			return InventorySlot;
 		end
 	end

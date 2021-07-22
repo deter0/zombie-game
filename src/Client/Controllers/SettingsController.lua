@@ -46,7 +46,7 @@ end
 
 function SettingsController:OpenSettings()
 	self.OpenedCameraCFrame = workspace.CurrentCamera.CFrame;
-	if (self.Opened) then return; end;
+	if (self.Opened or not self.WeaponHandler) then return; end;
 	self.WeaponHandler:MenuToggled("Settings", true);
 	self.Gui3D:Toggle(true);
 	self.Gui = self.Gui3D:GetGui();

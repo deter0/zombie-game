@@ -25,15 +25,15 @@ local Player = game:GetService("Players").LocalPlayer;
 
 local Camera = workspace.CurrentCamera or workspace:WaitForChild("Camera");
 
-local function GetBobbing(Addition:number, Modifier:number, Speed:number)
+local function GetBobbing(Addition:number, Modifier:number, Speed:number):number
     return math.sin(time() * Addition * (Speed or 0)) * Modifier;
 end
 
-local function Lerp(a:number, b:number, alpha:number)
+local function Lerp(a:number, b:number, alpha:number):number
     return a + (b - a) * alpha;
 end
 
-local function IsStatusValid(Status:number)
+local function IsStatusValid(Status:number):boolean
     return (Status >= 200 and Status <= 299);
 end
 
@@ -110,6 +110,9 @@ function WeaponHandler:Remove()
         self.Weapon.Parent = ReplicatedStorage.Cache;
     end
 
+    self:UnbindActions();
+    UserInputService.MouseIconEnabled = true;
+
     self.Equipped = nil;
     self.ActiveMaid:DoCleaning();
 end
@@ -128,6 +131,8 @@ end
 
 function WeaponHandler:SetCharacter(NewCharacter:Model)
     self.Character = NewCharacter;
+
+    self:Remove();
 
     self.RaycastParams = self.RaycastParams or RaycastParams.new();
     table.clear(self.RaycastParams.FilterDescendantsInstances);
@@ -513,6 +518,8 @@ local function clamp(x:number)
 end
 
 function WeaponHandler:Update(DeltaTime:number)
+    print("FRAMERATE:", math.round(1/DeltaTime));
+
     debug.profilebegin("WeaponHandler:Update");
     if (not self.Equipped) then return; end;
     if (not self.WeaponConfig) then
@@ -541,9 +548,9 @@ function WeaponHandler:Update(DeltaTime:number)
     -- * ((self.Speed * (self.WeaponConfig.RunningFieldOfViewMultiplier or 5))+1)
 
     if (self.Aiming) then
-        Camera.FieldOfView = Lerp(Camera.FieldOfView, self.WeaponConfig.AimingFieldOfView or 40, DeltaTime * AimingSpeed);
+        Camera.FieldOfView = Lerp(Camera.FieldOfView, self.WeaponConfig.AimingFieldOfView or 40, clamp(DeltaTime * AimingSpeed));
     else
-        Camera.FieldOfView = Lerp(Camera.FieldOfView, (self.WeaponConfig.FieldOfView or 65), DeltaTime * AimingSpeed);
+        Camera.FieldOfView = Lerp(Camera.FieldOfView, (self.WeaponConfig.FieldOfView or 65), clamp(DeltaTime * AimingSpeed));
     end
 
     local TargetAim = self.Aiming and self.Weapon.Offsets.Aim.Value or EmptyVector;
@@ -587,14 +594,14 @@ function WeaponHandler:Update(DeltaTime:number)
             self.ProximityPushbackOffset = EmptyCFrame;
         end
 
-        self.ProximityPushbackOffset = self.ProximityPushbackOffset:Lerp(Offset, DeltaTime * 5);
+        self.ProximityPushbackOffset = self.ProximityPushbackOffset:Lerp(Offset, clamp(DeltaTime * 5));
 
         MasterOffset *= self.ProximityPushbackOffset;
     end
 
     self.RunningCFrame = self.RunningCFrame or EmptyCFrame;
     local RunningCFrame =
-        EmptyCFrame:Lerp(self.Running and (self.Weapon.Offsets:FindFirstChild("Running") and self.Weapon.Offsets.Running.Value or CFrame.new(.4, 0, -.3) * CFrame.Angles(0, math.rad(45), 0)) or EmptyCFrame, self.Speed or 0);
+        EmptyCFrame:Lerp(self.Running and (self.Weapon.Offsets:FindFirstChild("Running") and self.Weapon.Offsets.Running.Value or CFrame.new(.4, 0, -.3) * CFrame.Angles(0, math.rad(45), 0)) or EmptyCFrame, clamp(self.Speed or 0));
 
     self.RunningCFrame = self.RunningCFrame:Lerp(RunningCFrame, clamp(5 * DeltaTime));
 
