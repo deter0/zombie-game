@@ -16,7 +16,7 @@ function CharacterOrientationController:Start()
 	local Original = {};
 
 	RunService.Heartbeat:Connect(function(DeltaTime)
-		local Orientation = math.atan(workspace.CurrentCamera.CFrame.LookVector.Y);
+		local Orientation = (workspace.CurrentCamera.CFrame.LookVector.Y);
 
 		self.OrientationPart.AssemblyLinearVelocity = Vector3.new();
 		self.OrientationPart.Position = Vector3.new(0, 1000, 0);

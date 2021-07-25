@@ -173,6 +173,10 @@ function WeaponHandler:SetCharacter(NewCharacter:Model)
         self.Speed = Speed / 16;
         self.HumanoidSpeed = Speed;
     end)
+
+    self.ActiveMaid.Died = self.Humanoid.Died:Connect(function()
+        self:Remove();
+    end)
 end
 
 function WeaponHandler:Equip(WeaponName:string)
@@ -500,7 +504,6 @@ function WeaponHandler:PlaySound(SoundName:string)
         local Stopped; Stopped = Sound.Stopped:Connect(function()
             Stopped:Disconnect();
             Sound:Destroy();
-
             Sound = nil;
             Stopped = nil;
         end)
@@ -508,8 +511,10 @@ function WeaponHandler:PlaySound(SoundName:string)
 end
 
 function WeaponHandler:Pump()
-    Thread.Delay(self.WeaponConfig.PumpDelay or .4, function()
-        self:PlayAnimation("Pump", 0.3);
+    print("Pumping");
+    self:PlayAnimation("Pump", 0.1);
+    Thread.Delay(self.WeaponConfig.PumpDelay or 0.4, function()
+        self:PlaySound("Pump");
     end)
 end
 
@@ -692,9 +697,15 @@ end
 
 function WeaponHandler:Fire()
     if (self.Running) then return; end;
+    if (self.EquipAnimationPlaying) then return; end;
 
     self.FiringManager:Fire(Camera.CFrame.LookVector, self.Weapon.Handle:WaitForChild("Muzzle").WorldPosition);
-    
+
+    warn(self.WeaponConfig.Pumping);
+    if (self.WeaponConfig.Pumping) then
+        self:Pump();
+    end
+
     self.FireIteration = not self.FireIteration and 1 or self.FireIteration + 1;
 
     for _, ParticleEmitter:ParticleEmitter|Light in ipairs(self.Weapon.Handle:WaitForChild("Muzzle"):GetChildren()) do

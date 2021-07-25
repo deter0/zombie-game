@@ -7,6 +7,7 @@ local Events = ReplicatedStorage:WaitForChild("Events");
 local Shared = ReplicatedStorage:WaitForChild("Aero"):WaitForChild("Shared");
 
 local Thread = require(Shared:WaitForChild("Thread"));
+local Status = require(Shared:WaitForChild("Status"));
 
 local PlayerService = game:GetService("Players");
 
@@ -38,7 +39,7 @@ function WeaponManager:Start()
 	end)
 
     Events:WaitForChild("Shot").OnServerInvoke = (function(...)
-        self:PlayerDidHitSomeone(...);
+        return self:PlayerDidHitSomeone(...);
     end)
 
     Thread.Spawn(function()
@@ -93,6 +94,8 @@ function WeaponManager:PlayerDidHitSomeone(Player:Player, CastUserData, Characte
                 Events:WaitForChild("BloodEffect"):FireAllClients(HitPosition, Character);
             end)
 
+            print("Hit someone");
+
             return Damage;
         end
     end
@@ -110,13 +113,14 @@ function WeaponManager:FiredRequest(Player, State:boolean|nil)
 end
 
 function WeaponManager:Fired(Player:Player)
+    -- if (true) then return false; end;
+
     local PlayerData = self:GetPlayerData(Player);
 
-    if (not PlayerData.WeaponConfig) then return; end;
-    if (not PlayerData.Equipped) then return; end;
+    if (not PlayerData.WeaponConfig) then return Status(400); end;
+    if (not PlayerData.Equipped) then return Status(400); end;
 
     if (not PlayerData.LastShot or (time() - PlayerData.LastShot >= 60/PlayerData.WeaponConfig.FireRate)) then
-        print('fired');
         PlayerData.LastShot = time();
         
         local Muzzle = PlayerData.Weapon:WaitForChild("Handle", 2):FindFirstChild("Muzzle");
@@ -136,6 +140,8 @@ function WeaponManager:Fired(Player:Player)
                         ParticleEmitter.Enabled = false;
                     end
                 end
+
+                Muzzle = nil; -- release from memory
             end)
         end
 
@@ -145,8 +151,17 @@ function WeaponManager:Fired(Player:Player)
             Sound.Parent = PlayerData.Weapon.Handle;
             Sound:Play();
 
-            game:GetService("Debris"):AddItem(Sound, 2);
+            local Stopped; Stopped = Sound.Stopped:Connect(function()
+                Stopped:Disconnect();
+                Sound:Destroy();
+                Sound = nil;
+                Stopped = nil;
+
+                return;
+            end)
         end
+        
+        return;
     end
 end
 
