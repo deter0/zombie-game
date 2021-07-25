@@ -411,7 +411,6 @@ function WeaponHandler:FirePrime()
         self.Fired = time();
     else
         ReplicatedStorage:WaitForChild("Events"):WaitForChild("Fired"):FireServer(true);
-
         self.Firing = true;
     end
 end

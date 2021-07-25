@@ -101,7 +101,7 @@ end
 function WeaponManager:FiredRequest(Player, State:boolean|nil)
 	local PlayerData = self:GetPlayerData(Player);
 
-    if (State) then
+    if (State ~= nil) then
         PlayerData.Firing = State;
         return;
     else
@@ -116,12 +116,13 @@ function WeaponManager:Fired(Player:Player)
     if (not PlayerData.Equipped) then return; end;
 
     if (not PlayerData.LastShot or (time() - PlayerData.LastShot >= 60/PlayerData.WeaponConfig.FireRate)) then
+        print('fired');
         PlayerData.LastShot = time();
         
         local Muzzle = PlayerData.Weapon:WaitForChild("Handle", 2):FindFirstChild("Muzzle");
 
         if (Muzzle) then
-            for _, ParticleEmitter:ParticleEmitter|Light in ipairs(PlayerData.Weapon.Handle:WaitForChild("Muzzle"):GetChildren()) do
+            for _, ParticleEmitter:ParticleEmitter|Light in ipairs(Muzzle:GetChildren()) do
                 if (ParticleEmitter:IsA("ParticleEmitter")) then
                     ParticleEmitter:Emit(ParticleEmitter:GetAttribute("Emit"));
                 elseif (ParticleEmitter:IsA("Light")) then
@@ -130,7 +131,7 @@ function WeaponManager:Fired(Player:Player)
             end
 
             Thread.Delay(.15, function()
-                for _, ParticleEmitter:ParticleEmitter|Light in ipairs(PlayerData.Weapon.Handle:WaitForChild("Muzzle"):GetChildren()) do
+                for _, ParticleEmitter:ParticleEmitter|Light in ipairs(Muzzle:GetChildren()) do
                    if (ParticleEmitter:IsA("Light")) then
                         ParticleEmitter.Enabled = false;
                     end
