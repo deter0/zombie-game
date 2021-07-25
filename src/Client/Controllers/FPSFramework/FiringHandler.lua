@@ -9,6 +9,8 @@ local FastCast = require(ReplicatedStorage:WaitForChild("FastCast"));
 
 local Hitmarker = require(Shared:WaitForChild("Hitmarker"));
 
+local CollectionService = game:GetService("CollectionService");
+
 FastCast.VisualizeCasts = false;
 FastCast.DebugLogging = false;
 
@@ -28,6 +30,8 @@ local FiringHandler = {
 function FiringHandler:GetBullet()
 	-- warn("Trying to get bullet", self.Bullets, self.BulletsInUse);
 	local Bullet = self.Bullets[((self.BulletsInUse + 1) % #self.Bullets) + 1];
+	Bullet:SetAttribute("Active", true);
+	Bullet.Transparency = 0;
 
 	if (not Bullet) then
 		warn("All bullets in use can't do anything.");
@@ -41,7 +45,8 @@ end
 
 local VERY_FAR = Vector3.new(-1e6, 1e6, 0);
 function FiringHandler:ReturnBullet(Bullet) -- ? Over engineered?
-	Bullet.Position = Vector3.new(0, 1e6, 0);
+	Bullet:SetAttribute("Active", false);
+	Bullet.Transparency = 1;
 end
 
 
@@ -88,12 +93,16 @@ function FiringHandler:Fire(Direction:Vector3, MuzzlePosition:Vector3) -- TODO
 		return;
 	end
 
-	local Behaviour = false;
 	self.CastBehaviour.Acceleration = self.WeaponCastingConfig.BulletGravity or Vector3.new(0, -workspace.Gravity, 0);
 	self.CastBehaviour.MaxDistance = self.WeaponCastingConfig.MaxDistance or 400;
 	self.CastBehaviour.CanPierceFunction = self.WeaponCastingConfig.CanPierceFunction or function(...)
 		return self:CanRayPierce(...);
 	end;
+	self.CastBehaviour.RaycastParams.FilterDescendantsInstances = {
+		workspace.CurrentCamera,
+		Player.Character,
+		table.unpack(CollectionService:GetTagged("NotCollidable")),
+	};
 
 	local DirectionCFrame = CFrame.lookAt(Vector3.new(), Direction);
 
@@ -124,9 +133,9 @@ end
 
 function FiringHandler:OnRayHit(Cast, RaycastResult) -- TODO
 	if (RaycastResult.Instance.Parent:FindFirstChild("Humanoid")) then
+		print("Ray hit something -----", RaycastResult.Instance);
 		-- RaycastResult.Instance.Parent:FindFirstChild("Humanoid"):TakeDamage(15);
 	end
-	-- print("Ray hit something -----", RaycastResult.Instance);
 end
 
 function FiringHandler:OnRayTerminated(Cast) -- TODO
@@ -141,9 +150,13 @@ function FiringHandler:OnRayUpdated(Cast, SegmentOrigin, SegmentDirection, Lengt
 	if (Bullet) then
 		local BulletLength = Bullet.Size.Z / 2;
 		local baseCFrame = CFrame.new(SegmentOrigin, SegmentOrigin + SegmentDirection);
+		
 		Bullet.CFrame = baseCFrame * CFrame.new(0, 0, -(Length - BulletLength));
+		
 		Bullet.AssemblyLinearVelocity = Vector3.new();
 		Bullet.AssemblyAngularVelocity = Vector3.new();
+
+		-- Bullet.Size = Vector3.new(Bullet.Size.X, Bullet.Size.Y, Bullet.Size.Z );
 	else
 		print("No bullet");
 	end
@@ -152,8 +165,6 @@ end
 function FiringHandler:CreateCaster()
 	self.Caster = FastCast.new();
 	self.CastBehaviour = FastCast.newBehavior();
-
-	local CollectionService = game:GetService("CollectionService");
 
 	local RaycastParams = RaycastParams.new();
 	RaycastParams.FilterType = Enum.RaycastFilterType.Blacklist;
@@ -211,7 +222,7 @@ function FiringHandler:MaintainBulletPositions()
 	Thread.Spawn(function()
 		RunService.Heartbeat:Connect(function()
 			for _, Bullet:BasePart in ipairs(self.Bullets) do
-				if (Bullet.Position.Y > 50000) then
+				if (not Bullet:GetAttribute("Active")) then
 					Bullet.AssemblyLinearVelocity = Vector3.new();
 					Bullet.AssemblyAngularVelocity = Vector3.new();
 					Bullet.Position = VERY_FAR;

@@ -154,7 +154,8 @@ function WeaponHandler:SetCharacter(NewCharacter:Model)
     self.ProximityParams.FilterDescendantsInstances = {
         NewCharacter,
         Camera,
-        table.unpack(CollectionService:GetTagged("NotCollidable"))
+        table.unpack(CollectionService:GetTagged("NotCollidable")),
+        table.unpack(CollectionService:GetTagged("PlayerCharacter"))
     };
     
     self.ActiveMaid.NonCollidableObjectAdded = CollectionService:GetInstanceAddedSignal("NotCollidable"):Connect(function()
@@ -405,9 +406,12 @@ function WeaponHandler:FirePrime()
     if (self.WeaponConfig.FireMode ~= 1) then
         self:PlayAnimation("Firing", .3);
         self:Fire();
+        ReplicatedStorage:WaitForChild("Events"):WaitForChild("Fired"):FireServer();
         if (self.WeaponConfig.Pumping) then self:Pump(); end;
         self.Fired = time();
     else
+        ReplicatedStorage:WaitForChild("Events"):WaitForChild("Fired"):FireServer(true);
+
         self.Firing = true;
     end
 end
@@ -423,6 +427,7 @@ function WeaponHandler:FireActionCalled(_, State)
         end
     elseif (State == Enum.UserInputState.End) then
         self:StopAnimation("Firing", .3);
+        ReplicatedStorage:WaitForChild("Events"):WaitForChild("Fired"):FireServer(false);
         self.Firing = false;
     end
 end
@@ -514,16 +519,19 @@ local EmptyVector = Vector3.new();
 local VeryFar = CFrame.new(1e8, 1e8, 1e8);
 
 local function clamp(x:number)
-    return math.clamp(x, 0, 1);
+    -- return 1;
+    return math.clamp(x, 0, .3);
 end
 
 function WeaponHandler:Update(DeltaTime:number)
-    print("FRAMERATE:", math.round(1/DeltaTime));
-
     debug.profilebegin("WeaponHandler:Update");
     if (not self.Equipped) then return; end;
     if (not self.WeaponConfig) then
         self.WeaponConfig = require(self.Weapon:WaitForChild("Config"));
+    end
+
+    if (UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) and not self.Aiming) then
+        self:Aim(nil, Enum.UserInputState.Begin);
     end
 
     if (self.IsAMenuOpen) then
@@ -574,7 +582,7 @@ function WeaponHandler:Update(DeltaTime:number)
         end
     end
 
-    if (not self.WeaponConfig.DisableProximityPushback) then
+    if (false) then
         local Backpoint = Camera.CFrame.Position;
         local _, Size = self.Viewmodel:GetBoundingBox();
         Size = Size.Magnitude;
@@ -599,6 +607,9 @@ function WeaponHandler:Update(DeltaTime:number)
         MasterOffset *= self.ProximityPushbackOffset;
     end
 
+    UserInputService.MouseDeltaSensitivity = self.Aiming and .8 or 1;
+    self.Humanoid.WalkSpeed = self.Aiming and 12 or 16;
+
     self.RunningCFrame = self.RunningCFrame or EmptyCFrame;
     local RunningCFrame =
         EmptyCFrame:Lerp(self.Running and (self.Weapon.Offsets:FindFirstChild("Running") and self.Weapon.Offsets.Running.Value or CFrame.new(.4, 0, -.3) * CFrame.Angles(0, math.rad(45), 0)) or EmptyCFrame, clamp(self.Speed or 0));
@@ -610,7 +621,7 @@ function WeaponHandler:Update(DeltaTime:number)
     self.JumpingVelocity = self.JumpingVelocity or EmptyCFrame;
 
     self.JumpingVelocity = self.JumpingVelocity:Lerp(
-        CFrame.Angles(-math.rad(math.clamp(self.Character.PrimaryPart.Velocity.Y, -35, 35)), 0, 0),
+        CFrame.Angles(-math.rad(math.clamp(self.Character.PrimaryPart.Velocity.Y, -35, 35)) * (self.Aiming and .2 or 1), 0, 0),
         clamp(10 * DeltaTime)
     );
 
@@ -618,7 +629,7 @@ function WeaponHandler:Update(DeltaTime:number)
 
     local MouseDelta = UserInputService:GetMouseDelta();
 
-    self.Springs.Sway:shove(Vector3.new(MouseDelta.X / 200, MouseDelta.Y / 200) * (self.WeaponConfig.WeaponLightness or 1));
+    self.Springs.Sway:shove(Vector3.new(MouseDelta.X / 200, MouseDelta.Y / 200) * (self.WeaponConfig.WeaponLightness or 1) * (self.Aiming and .5 or 1));
 
     if (self.LoadedAnimations.Running) then
         if (self.Running) then
@@ -711,10 +722,14 @@ function WeaponHandler:Fire()
     self.Springs.Recoil:shove(self.WeaponConfig.GetWeaponModelRecoil());
     self:PlaySound("Fire");
 
-    local CameraShove = (self.WeaponConfig.GetCameraRecoil());
+    local CameraShove = (self.WeaponConfig.GetCameraRecoil() * (self.Aiming and .35 or 1));
     self.Springs.Camera:shove(CameraShove);
 end
 
+local ActiveStates = {
+    [Enum.HumanoidStateType.Running] = true,
+    [Enum.HumanoidStateType.RunningNoPhysics] = true, 
+};
 function WeaponHandler:Footsteps()
     self.FootstepFrame = not self.FootstepFrame and 1 or self.FootstepFrame + 1;
 
@@ -728,18 +743,17 @@ function WeaponHandler:Footsteps()
         end
     end
 
-    self.lastPosition = self.lastPosition or Vector3.new();
+    self.LastPosition = self.LastPosition or Vector3.new();
 
     self.HumanoidState = self.Humanoid:GetState();
-    if (not self.FootstepTable or not self.HumanoidSpeed or (self.HumanoidState ~= Enum.HumanoidStateType.Running and self.HumanoidState ~= Enum.HumanoidStateType.RunningNoPhysics)) then return; end;
+    if (not self.FootstepTable or not ActiveStates[self.HumanoidState]) then return; end;
 
-    if ((self.Character.HumanoidRootPart.Position - self.lastPosition).Magnitude <= 4) then
+    if ((self.Character.HumanoidRootPart.Position - self.LastPosition).Magnitude <= 4) then
         return;
     end
 
-    self.lastPosition = self.Character.HumanoidRootPart.Position;
+    self.LastPosition = self.Character.HumanoidRootPart.Position;
 
-    -- print(self.Footste   pTable[math.random(#self.FootstepTable)]);
     AudioModule:GetInstanceFromId(self.FootstepTable[math.random(#self.FootstepTable)]):Play();
 end
 

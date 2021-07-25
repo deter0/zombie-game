@@ -56,9 +56,9 @@ function BloodHandler:Start()
         self:OnBloodRayUpdated(...);
     end);
 
-	Events:WaitForChild("BloodEffect").OnClientEvent:Connect(function(...)
-        self:CastBlood(...);
-    end)
+	-- Events:WaitForChild("BloodEffect").OnClientEvent:Connect(function(...)
+    --     self:CastBlood(...);
+    -- end)
 
     -- game:GetService("ContextActionService"):BindAction("Clickity click click", function(_, State)
     --     if (State == Enum.UserInputState.Begin) then
@@ -70,7 +70,6 @@ end
 
 local AllBones = {"l1", "l2", "l3", "l4", "r1", "r2", "r3", "r4"};
 function BloodHandler:MakeParticle(Position:Vector3, Normal:Vector3, Ignore)
-    
     local BloodModel = ParticlesFolder:WaitForChild("BloodHighFidelity"):WaitForChild("BloodRigged"):Clone();
 
     local NormalCFrame = CFrame.lookAt(Vector3.new(), Normal);
@@ -79,7 +78,7 @@ function BloodHandler:MakeParticle(Position:Vector3, Normal:Vector3, Ignore)
 
     BloodModel.PrimaryPart.CFrame *= CFrame.Angles(0, math.random()*(math.pi*2), 0);
 
-    print(Ignore);
+    -- print(Ignore);
 
     -- for _, BoneName in ipairs(AllBones) do
     --     local Bone = BloodModel.PrimaryPart:FindFirstChild(BoneName);
@@ -98,6 +97,7 @@ function BloodHandler:MakeParticle(Position:Vector3, Normal:Vector3, Ignore)
     game:GetService("Debris"):AddItem(BloodModel, 60);
 
     BloodModel.Parent = workspace.Blood;
+    BloodModel = nil;
     -- TODO: Set it to the ground thing or whatever
 end
 
@@ -108,18 +108,20 @@ function BloodHandler:RawCast(Position:Vector3, Ignore)
 
     self.CastParams.FilterDescendantsInstances = {
         table.unpack(CollectionService:GetTagged("NotCollidable")),
+        workspace:WaitForChild("Blood"):GetChildren(),
+        table.unpack(CollectionService:GetTagged("PlayerCharacter")),
         Ignore
     };
 
-    self.CastBehavior.CastParams = self.CastParams;
-    local Blood = self.Caster:Fire(Position, Direction, Direction * math.random(4, 10), self.CastBehavior);
+    self.CastBehavior.RaycastParams  = self.CastParams;
+    local Blood = self.Caster:Fire(Position, Direction, 24, self.CastBehavior);
     Blood.UserData.Ignore = Ignore;
 
     -- warn("Can do stuff with blood", Blood);
 end
 
 function BloodHandler:OnBloodCastHit(Cast, RaycastResult, SegmentVelocity, BloodObject)
-    warn("Blood hit something !!!", RaycastResult.Instance);
+    -- warn("Blood hit something !!!", RaycastResult.Instance);
     self:MakeParticle(RaycastResult.Position, RaycastResult.Normal, Cast.UserData.Ignore);
 end
 
@@ -150,7 +152,7 @@ function BloodHandler:OnRayTerminated(Cast)
 end
 
 function BloodHandler:CastBlood(Position:Vector3, Ignore)
-    for _ = 1, 8 do
+    for _ = 1, 3 do
         self:RawCast(Position, Ignore);
     end
 end

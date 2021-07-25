@@ -32,54 +32,121 @@ function WeaponManager:Start()
         PlayerData = nil;
     end)
 
-    --@ https://en.wikipedia.org/wiki/Smoothstep
-    local function SmoothStep(edge0:number, edge1:number, x:number)
-        -- Scale, bias and saturate x to 0..1 range
-        x = math.clamp((x - edge0) / (edge1 - edge0), 0, 1); 
-        -- Evaluate polynomial
-        return x * x * (3 - 2 * x);
+    local Fired:RemoteEvent = Events:WaitForChild("Fired");
+	Fired.OnServerEvent:Connect(function(...)
+		self:FiredRequest(...);
+	end)
+
+    Events:WaitForChild("Shot").OnServerInvoke = (function(...)
+        self:PlayerDidHitSomeone(...);
+    end)
+
+    Thread.Spawn(function()
+        local RunService = game:GetService("RunService");
+
+        self.ServerUpdateTick = RunService.Heartbeat:Connect(function() -- TODO: Maybe calculate how many times the player shot based on delta time
+            for Player:Player, PlayerData in pairs(self.Data) do
+                if (PlayerData.Firing) then
+                    self:Fired(Player);
+                end
+            end
+        end)
+    end)
+end
+
+function WeaponManager:PlayerDidHitSomeone(Player:Player, CastUserData, Character:Model, HitPosition:Vector3)
+    local PlayerData = self:GetPlayerData(Player);
+    local ShotPlayer = PlayerService:GetPlayerFromCharacter(Character);
+
+    if (ShotPlayer and ShotPlayer == Player) then
+        return;
     end
 
-    Events:WaitForChild("Shot").OnServerInvoke = (function(Player:Player, CastUserData, Character:Model, HitPosition:Vector3)
-        local PlayerData = self:GetPlayerData(Player);
+    if (Character and PlayerData.WeaponConfig) then
+        -- if (PlayerData.LastShot and (os.clock() - PlayerData.LastShot) < 60/PlayerData.WeaponConfig.FireRate) then
+        --     print("Player shot too early"); -- TODO: Cheat detection
+        --     return;
+        -- end
+        
+        PlayerData.LastShot = time();
+        
+        local Humanoid = Character:FindFirstChildWhichIsA("Humanoid");
 
-        print(CastUserData);
-
-        if (Character and PlayerData.WeaponConfig) then
-            -- if (PlayerData.LastShot and (os.clock() - PlayerData.LastShot) < 60/PlayerData.WeaponConfig.FireRate) then
-            --     print("Player shot too early"); -- TODO: Cheat detection
-            --     return;
-            -- end
-            
-            PlayerData.LastShot = time();
-            
-            local Humanoid = Character:FindFirstChildWhichIsA("Humanoid");
-
-            if (Humanoid) then
-                local Distance = (CastUserData.RayOrigin - Character.PrimaryPart.Position).Magnitude;
-                if (Distance > (PlayerData.WeaponConfig.CastingConfig.BulletMaxDist + 25)) then -- Error margin of 25 just because
-                    print("Player shot too far"); -- TODO: Cheat detection
-                    return;
-                end
-
-                local Damage = PlayerData.WeaponConfig.Damage or 0;
-                Damage *= math.clamp((5-((CastUserData.Hits and CastUserData.Hits - 1) or 0))/5, 0.1, 1);
-                -- Damage *= 
-
-                local DistancePercentage = (Distance/PlayerData.WeaponConfig.CastingConfig.BulletMaxDist); -- Damage drop off over distance
-                local Falloff = 1 - (DistancePercentage ^ 2 * (3 - 2 * DistancePercentage));
-                Damage *= Falloff;
-
-                Humanoid:TakeDamage(Damage);
-
-                Thread.Spawn(function()
-                    Events:WaitForChild("BloodEffect"):FireAllClients(HitPosition, Character);
-                end)
-
-                return Damage;
+        if (Humanoid) then
+            local Distance = (CastUserData.RayOrigin - Character.PrimaryPart.Position).Magnitude;
+            if (Distance > (PlayerData.WeaponConfig.CastingConfig.BulletMaxDist + 25)) then -- Error margin of 25 just because
+                print("Player shot too far"); -- TODO: Cheat detection
+                return;
             end
+
+            local Damage = PlayerData.WeaponConfig.Damage or 0;
+            Damage *= math.clamp((5-((CastUserData.Hits and CastUserData.Hits - 1) or 0))/5, 0.1, 1);
+            -- Damage *= 
+
+            local DistancePercentage = (Distance/PlayerData.WeaponConfig.CastingConfig.BulletMaxDist); -- Damage drop off over distance
+            local Falloff = 1 - (DistancePercentage ^ 2 * (3 - 2 * DistancePercentage));
+            Damage *= Falloff;
+
+            Humanoid:TakeDamage(Damage);
+
+            Thread.Spawn(function()
+                Events:WaitForChild("BloodEffect"):FireAllClients(HitPosition, Character);
+            end)
+
+            return Damage;
         end
-    end)
+    end
+end
+
+function WeaponManager:FiredRequest(Player, State:boolean|nil)
+	local PlayerData = self:GetPlayerData(Player);
+
+    if (State) then
+        PlayerData.Firing = State;
+        return;
+    else
+        self:Fired(Player);
+    end
+end
+
+function WeaponManager:Fired(Player:Player)
+    local PlayerData = self:GetPlayerData(Player);
+
+    if (not PlayerData.WeaponConfig) then return; end;
+    if (not PlayerData.Equipped) then return; end;
+
+    if (not PlayerData.LastShot or (time() - PlayerData.LastShot >= 60/PlayerData.WeaponConfig.FireRate)) then
+        PlayerData.LastShot = time();
+        
+        local Muzzle = PlayerData.Weapon:WaitForChild("Handle", 2):FindFirstChild("Muzzle");
+
+        if (Muzzle) then
+            for _, ParticleEmitter:ParticleEmitter|Light in ipairs(PlayerData.Weapon.Handle:WaitForChild("Muzzle"):GetChildren()) do
+                if (ParticleEmitter:IsA("ParticleEmitter")) then
+                    ParticleEmitter:Emit(ParticleEmitter:GetAttribute("Emit"));
+                elseif (ParticleEmitter:IsA("Light")) then
+                    ParticleEmitter.Enabled = true;
+                end
+            end
+
+            Thread.Delay(.15, function()
+                for _, ParticleEmitter:ParticleEmitter|Light in ipairs(PlayerData.Weapon.Handle:WaitForChild("Muzzle"):GetChildren()) do
+                   if (ParticleEmitter:IsA("Light")) then
+                        ParticleEmitter.Enabled = false;
+                    end
+                end
+            end)
+        end
+
+        local Sound = PlayerData.Weapon:WaitForChild("Sounds", 2):FindFirstChild("Fire");
+        if (Sound) then
+            Sound = Sound:Clone();
+            Sound.Parent = PlayerData.Weapon.Handle;
+            Sound:Play();
+
+            game:GetService("Debris"):AddItem(Sound, 2);
+        end
+    end
 end
 
 function WeaponManager:CreateStockData(Player:Player)

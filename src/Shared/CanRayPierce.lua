@@ -16,6 +16,12 @@ return function(Cast, RaycastResult:RaycastResult, SegmentVelocity)
 	local RaycastOrigin = Cast.UserData.RayOrigin;
 	local Direction = Cast.UserData.Direction;
 
+	-- local SurfaceAppearance = RaycastResult.Instance:FindFirstChildWhichIsA("SurfaceAppearance");
+	-- if (SurfaceAppearance and SurfaceAppearance.AlphaMode == Enum.AlphaMode.Transparency) then
+	-- 	print("Pass through transparent surface appearance");
+	-- 	return true;
+	-- end
+
 	if (RaycastResult.Instance:IsA("BasePart")) then
 		local Size = (RaycastResult.Instance.Size * RaycastResult.Normal).Magnitude;
 

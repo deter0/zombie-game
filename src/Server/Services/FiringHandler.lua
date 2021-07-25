@@ -15,7 +15,6 @@ local FiringHandler = {
 };
 
 function FiringHandler:GetBullets(Player:Player)
-	print("Making or updating bullets for player " .. Player.Name);
 	local PlayerDirectory = Base64:Encode(tostring(Player.UserId));
 	local PlayerBulletDirectory = BulletsDirectory:FindFirstChild(PlayerDirectory);
 
@@ -34,12 +33,10 @@ function FiringHandler:GetBullets(Player:Player)
 	local BulletsToHandle = self.BulletsPerPlayer - NumOfBullets;
 	if (BulletsToHandle > 0) then
 		for ind = 1, BulletsToHandle do
-			warn("Creating bullet!!");
 			local Bullet = self:CreateBullet();
 			Bullet.Name = ind;
 			CollectionService:AddTag(Bullet, "Bullet");
 			Bullet.Parent = PlayerBulletDirectory;
-			print("Set parent", Bullet, Bullet.Parent);
 			
 			if (ind % 60 == 0) then
 				wait(.1); -- Cool down
@@ -47,7 +44,6 @@ function FiringHandler:GetBullets(Player:Player)
 		end
 	else
 		for _ = 1, BulletsToHandle do
-			print("Deleting bullet");
 			local Bullets = PlayerBulletDirectory:GetChildren();
 			Bullets[#Bullets]:Destroy();
 		end
@@ -74,10 +70,7 @@ function FiringHandler:CreateBullet() -- ?
 end
 
 function FiringHandler:SetBullets(Player, BulletsContainer)
-	print("did thing", BulletsContainer, CollectionService:GetTags(BulletsContainer));
-	
 	if (CollectionService:HasTag(BulletsContainer, "PlayerBulletDirectory")) then
-		print("has tag");
 		BulletsContainer.Parent = workspace:WaitForChild("Bullets");
 
 		for _, Bullet in ipairs(BulletsContainer:GetChildren()) do
