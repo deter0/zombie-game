@@ -106,10 +106,9 @@ function CommandPrompt:Open()
 
 	self.Maid.ListenForTab = UserInputService.InputBegan:Connect(function(Input)
 		if (Input.KeyCode == Enum.KeyCode.Tab) then
-			print("Tab");
 			self.UI.Command.Text ..= string.rep("\t", 4);
 			self.UI.Command.CursorPosition += 4;
-		elseif (Input.KeyCode == Enum.KeyCode.Return) then
+		elseif (Input.KeyCode == Enum.KeyCode.Return and CommandPromptScreenGui.Enabled) then
 			self:WriteLine(">\t"..string.sub(self.UI.Command.Text, 1, 100)..(#string.sub(self.UI.Command.Text, 1, 100)>100 and "..." or ""));
 			local Execution = Executer.Execute(self.UI.Command.Text, self.Directory, self);
 

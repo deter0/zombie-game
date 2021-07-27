@@ -16,11 +16,11 @@ function EntityTester:Start()
 	});
 
 	local s = os.clock();
-	for i = 1, 100000 do
-		local Ball = EntityManager:CreateEntityFromTemplate("Ball");
+	-- for i = 1, 100000 do
+	-- 	local Ball = EntityManager:CreateEntityFromTemplate("Ball");
 
-		if (i % 50000 == 0) then wait(.2); end;
-	end
+	-- 	if (i % 50000 == 0) then wait(.2); end;
+	-- end
 	print("Generated entities in", os.clock() - s);
 
 	wait(50000); -- dont clear them from memory for testing

@@ -41,7 +41,7 @@ function InputManager:Start()
     self.FiringManager = require(script:WaitForChild("FiringHandler"));
     
     self.Weapons = game:GetService("ReplicatedStorage"):WaitForChild("Weapons"):GetChildren();
-    self.WeaponHandler = self.WeaponHandlerClass.new(self.FiringManager, self.ServerWeaponManager);
+    self.WeaponHandler = self.WeaponHandlerClass.new(self.FiringManager, self.ServerWeaponManager, self);
     self.Maid.WeaponHandler = self.WeaponHandler;
 
     self.FiringManager:Start(self.WeaponHandler);

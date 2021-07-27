@@ -29,7 +29,6 @@ function Droppable.Remove(self)
 end
 
 function Droppable.Apply(self)
-	self.X = string.rep(tostring(math.random()), 5012);
 	if (self.Model) then
 		for index, value in pairs(Droppable) do
 			if (index ~= "Apply" and index ~= "Remove") then

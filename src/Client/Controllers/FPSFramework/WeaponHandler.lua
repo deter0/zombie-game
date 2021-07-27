@@ -52,11 +52,12 @@ local function PlayTweenOnce(Object:Instance, Properties, TweenInformation:Tween
     Tween:Play();
 end
 
-function WeaponHandler.new(FiringManager, ServerManager)
+function WeaponHandler.new(FiringManager, ServerManager, env)
     local self = setmetatable(
         {
             Maid = Maid.new(),
             ActiveMaid = Maid.new(),
+            env = env,
             Springs = {
                 Spread = Spring:create(),
                 Recoil = Spring:create(),
@@ -188,6 +189,7 @@ function WeaponHandler:Equip(WeaponName:string)
     if (self.Disabled) then warn("Disabled"); return; end;
 
     local Status = self.ServerManager:Equipped(WeaponName);
+    self.env.Controllers.Diagnostics:InvokedRemoteFunction();
 
     if (not IsStatusValid(Status)) then
         warn("Got invalid status from server", Status);
@@ -411,10 +413,12 @@ function WeaponHandler:FirePrime()
         self:PlayAnimation("Firing", .3);
         self:Fire();
         ReplicatedStorage:WaitForChild("Events"):WaitForChild("Fired"):FireServer();
+        self.env.Controllers.Diagnostics:FiredRemoteEvent();
         if (self.WeaponConfig.Pumping) then self:Pump(); end;
         self.Fired = time();
     else
         ReplicatedStorage:WaitForChild("Events"):WaitForChild("Fired"):FireServer(true);
+        self.env.Controllers.Diagnostics:FiredRemoteEvent();
         self.Firing = true;
     end
 end
@@ -431,6 +435,7 @@ function WeaponHandler:FireActionCalled(_, State)
     elseif (State == Enum.UserInputState.End) then
         self:StopAnimation("Firing", .3);
         ReplicatedStorage:WaitForChild("Events"):WaitForChild("Fired"):FireServer(false);
+        self.env.Controllers.Diagnostics:FiredRemoteEvent();
         self.Firing = false;
     end
 end
@@ -523,8 +528,8 @@ local EmptyVector = Vector3.new();
 local VeryFar = CFrame.new(1e8, 1e8, 1e8);
 
 local function clamp(x:number)
-    -- return 1;
-    return math.clamp(x, 0, .3);
+    -- return .15;
+    return math.clamp(x, 0, .15);
 end
 
 function WeaponHandler:Update(DeltaTime:number)
@@ -565,11 +570,12 @@ function WeaponHandler:Update(DeltaTime:number)
         Camera.FieldOfView = Lerp(Camera.FieldOfView, (self.WeaponConfig.FieldOfView or 65), clamp(DeltaTime * AimingSpeed));
     end
 
-    local TargetAim = self.Aiming and self.Weapon.Offsets.Aim.Value or EmptyVector;
+    local AimRotation = self.Weapon.Offsets:FindFirstChild("AimRotation") and self.Weapon.Offsets.AimRotation.Value or EmptyVector;
+    local TargetAim = self.Aiming and CFrame.new(self.Weapon.Offsets.Aim.Value) * CFrame.Angles(AimRotation.X, AimRotation.Y, AimRotation.Z) or EmptyCFrame;
 
     self.Weapon.Offsets.ViewmodelOffset.Aiming.Value =
         self.Weapon.Offsets.ViewmodelOffset.Aiming.Value:Lerp(
-            TargetAim,
+            self.Weapon.Offsets.ViewmodelOffset.Aiming:IsA("CFrameValue") and TargetAim or TargetAim.Position,
             clamp(DeltaTime * AimingSpeed)
         );
 
