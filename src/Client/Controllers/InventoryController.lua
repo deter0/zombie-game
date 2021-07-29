@@ -22,7 +22,6 @@ function InventoryController:Start()
 	self.GuiStorage = self.Gui:WaitForChild("Items");
 
 	self.InventoryManager = self.Services.InventoryManager;
-	self.Inventory = self.InventoryManager:GetInventory();
 
 	local Container:Frame = self.Gui:WaitForChild("Container"):WaitForChild("InventorySlotsContainer");
 	function self:SizeChanged()
@@ -31,11 +30,14 @@ function InventoryController:Start()
 		GridLayout.CellSize = UDim2.fromOffset(Container.AbsoluteSize.X/7, Container.AbsoluteSize.Y/5);
 	end
 
+	warn("Inventory controller started.");
+
 	Container:GetPropertyChangedSignal("AbsoluteSize"):Connect(self.SizeChanged);
 	self:SizeChanged();
 
 	ContextActionService:BindAction("OpenInventory", function(_, State)
 		if (State ~= Enum.UserInputState.Begin) then return; end;
+		print("Inventory open action called.");
 
 		self.Gui.Enabled = not self.Gui.Enabled;
 
@@ -45,19 +47,20 @@ function InventoryController:Start()
 			end
 		end
 
-		self.Controllers.FPSFramework.WeaponHandler:FreeMouse("Inventory", self.Gui.Enabled);
+		self.Controllers.FPSFramework.WeaponHandler:MenuToggled("Inventory", self.Gui.Enabled);
 
 		if (self.Gui.Enabled) then
 			for _, InventorySlot in ipairs(self.InventorySlots or {}) do
 				InventorySlot:Destroy();
 			end
 
+			self.Inventory = self.InventoryManager:GetInventory();
 			self:DrawInventory(self.Gui:WaitForChild("Container"):WaitForChild("InventorySlotsContainer"));
 		end
-	end, false, Enum.KeyCode.I);
+	end, false, Enum.KeyCode.E);
 end
 
-local function Interesecting(x, y, p, s)
+local function Intersecting(x, y, p, s)
 	return ((x >= (p.X - s.X/2) and x <= (p.X + (s.X/2))) and (y >= (p.Y - s.Y/2) and y <= (p.Y + s.Y/2)));
 end
 
@@ -65,14 +68,14 @@ function InventoryController:GetHoveringSlot(DragOffset:Vector2)
 	local MouseLocation:Vector2 = UserInputService:GetMouseLocation() + self.DragOffset;
 
 	for _, InventorySlot in ipairs(self.InventorySlots) do
-		if (Interesecting(MouseLocation.X + DragOffset.X, MouseLocation.Y + DragOffset.Y, InventorySlot.Gui.AbsolutePosition, InventorySlot.Gui.AbsoluteSize)) then
+		if (Intersecting(MouseLocation.X + DragOffset.X, MouseLocation.Y + DragOffset.Y, InventorySlot.Gui.AbsolutePosition, InventorySlot.Gui.AbsoluteSize)) then
 			return InventorySlot;
 		end
 	end
 end
 
-function InventoryController:Drag(InventorySlotGui:TextLabel, InitalX:number, InitalY:number)
-	local InitalClickPosition = Vector2.new(InitalX, InitalY);
+function InventoryController:Drag(InventorySlotGui:TextLabel, InitialX:number, InitialY:number)
+	local InitialClickPosition = Vector2.new(InitialX, InitialY);
 
 	if (self.DraggingLoop) then self.DraggingLoop:Disconnect(); end;
 	if (self.DetectStopSignal) then self.DetectStopSignal:Disconnect(); end;
@@ -88,7 +91,7 @@ function InventoryController:Drag(InventorySlotGui:TextLabel, InitalX:number, In
 	self.StopDragging = false;
 	self.RightClicked = false;
 
-	self.DragOffset = InventorySlotGui.AbsolutePosition - InitalClickPosition;
+	self.DragOffset = InventorySlotGui.AbsolutePosition - InitialClickPosition;
 
 	self.DetectStopSignal = UserInputService.InputEnded:Connect(function(Input)
 		if (Input.UserInputType == Enum.UserInputType.MouseButton1) then
@@ -115,10 +118,10 @@ function InventoryController:Drag(InventorySlotGui:TextLabel, InitalX:number, In
 
 					HoveringSlot.Slot.Quantity += 1;
 					HoveringSlot.Slot.Item = TableUtil.Copy(FromInventorySlot.Slot.Item);
-					
+
 					HoveringSlot:Update();
 					FromInventorySlot:Update();
-					
+
 					HoveringSlot.Gui.Icon.Image = FromInventorySlot.Gui.Icon.Image;
 				end
 
@@ -140,7 +143,7 @@ function InventoryController:Drag(InventorySlotGui:TextLabel, InitalX:number, In
 
 		if (self.StopDragging) then
 			self.StopDragging = false;
-			
+
 			self.DraggingLoop:Disconnect();
 			self.DetectStopSignal = self.DetectStopSignal and self.DetectStopSignal:Disconnect();
 			self.DraggingObject:Destroy();
@@ -155,7 +158,7 @@ function InventoryController:Drag(InventorySlotGui:TextLabel, InitalX:number, In
 			if (self.RightClicked) then return; end;
 
 			for _, InventorySlot in ipairs(self.InventorySlots) do
-				if (Interesecting(MouseLocation.X, MouseLocation.Y, InventorySlot.Gui.AbsolutePosition, InventorySlot.Gui.AbsoluteSize)) then
+				if (Intersecting(MouseLocation.X, MouseLocation.Y, InventorySlot.Gui.AbsolutePosition, InventorySlot.Gui.AbsoluteSize)) then
 					local CurrentInventorySlot = InventorySlot.Slot;
 
 					Thread.Spawn(function()
@@ -197,9 +200,9 @@ function InventoryController:DrawInventory(Parent:Instance)
 
 	for _, InventorySlot in ipairs(self.Inventory) do
 		local Tweens = {};
-		
+
 		local InventorySlotGui:TextButton = self.GuiStorage:WaitForChild("Slot"):Clone();
-		
+
 		local Slot = {Gui = InventorySlotGui, Slot = InventorySlot, Update = function(self)
 			self.Gui.Icon.Image = self.Slot.Item and self.Slot.Item.Icon or "";
 			self.Gui.QuantityText.Text = self.Slot.Quantity or 0;
@@ -268,7 +271,7 @@ function InventoryController:DrawInventory(Parent:Instance)
 end
 
 function InventoryController:Init()
-	
+
 end
 
 

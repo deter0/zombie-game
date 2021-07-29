@@ -56,8 +56,6 @@ function InputManager:Start()
     self.Maid.LoadingPercentageUpdated = self.WeaponHandler.LoadingPercentageUpdated:Connect(function(NewPercent:number)
         self.LoadingPercentage = NewPercent;
 
-        print(NewPercent);
-
         if (NewPercent >= 1) then
             self.IsLoaded = true;
             self.Loaded:Fire();

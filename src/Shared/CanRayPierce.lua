@@ -32,8 +32,6 @@ return function(Cast, RaycastResult:RaycastResult, SegmentVelocity)
 		if (OpposingRaycast) then
 			local RayCoverage = (RaycastResult.Position - OpposingRaycast.Position).Magnitude * (MaterialAffectors[OpposingRaycast.Material] or 1);
 
-			print(RayCoverage, RayCoverage <= 2);
-
 			return (RayCoverage <= 2);
 		end
 	end

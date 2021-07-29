@@ -9,6 +9,7 @@ end
 
 function Model.Apply(self)
 	self.Model = self.Model:Clone();
+	self.Model:SetAttribute("Id", self.Id);
 	return true, {};
 end
 

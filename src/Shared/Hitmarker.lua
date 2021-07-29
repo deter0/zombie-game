@@ -5,8 +5,6 @@ local HitMarkerFolder = ReplicatedStorage:WaitForChild("Hitmarker");
 local HitMarker = {};
 
 function HitMarker:Hit(Position:Vector3, Damage:number?)
-	warn("Hit");
-	
 	local HitMarkerAttachment = HitMarkerFolder:WaitForChild("HitmarkerContainer"):WaitForChild("Hitmarker"):Clone();
 	HitMarkerAttachment.WorldPosition = Position + Vector3.new(math.random(), 5, math.random());
 	HitMarkerAttachment:WaitForChild("HitmarkerGUI"):WaitForChild("Damage").Text = tostring(math.floor(Damage + .5)) or "";

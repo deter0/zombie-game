@@ -64,9 +64,7 @@ function FiringHandler:CanRayPierce(Cast, RaycastResult, ...) -- TODO
 
 			if (Humanoid.Health > 0) then
 				Thread.SpawnNow(function()
-					local Damage, H, F = Events:WaitForChild("Shot"):InvokeServer(Cast.UserData, Humanoid.Parent, RaycastResult.Position);
-
-					warn("HIT IAS", Damage, H, F);
+					local Damage = Events:WaitForChild("Shot"):InvokeServer(Cast.UserData, Humanoid.Parent, RaycastResult.Position);
 
 					if (Damage) then
 						Hitmarker:Hit(RaycastResult.Position, Damage);

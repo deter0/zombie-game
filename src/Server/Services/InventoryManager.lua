@@ -15,13 +15,12 @@ local InventoryManager = {
     Client = {},
 }
 
-
 function InventoryManager:Start()
     local PlayerInventoryStore = ProfileService.GetProfileStore("PlayerInventory", self:GetMockPlayerData());
 
 	PlayerService.PlayerAdded:Connect(coroutine.wrap(function(Player)
         local Profile = PlayerInventoryStore:LoadProfileAsync(
-            ("player-"..Player.UserId.."--v$test5"),
+            ("player-"..Player.UserId.."-v6"),
             "ForceLoad"
         );
 
@@ -30,12 +29,11 @@ function InventoryManager:Start()
 
             Profile:ListenToRelease(function()
                 InventoryManager.Data[Player] = nil;
-                Player:Kick("lol???? ?? idk");
+                Player:Kick("Game data is being utilized in another server.");
             end)
 
              if (Player:IsDescendantOf(PlayerService)) then
                 InventoryManager.Data[Player] = Profile;
-                warn("PROFILe", Profile);
             else
                 Profile:Release();
             end
@@ -47,11 +45,14 @@ function InventoryManager:Start()
     end)
 end
 
+local RunService = game:GetService("RunService");
 function InventoryManager.Client:GetInventory(Player:Player)
-    repeat wait(0);
-        print("Waiting for inventory");
-    until InventoryManager.Data[Player].Data.Inventory;
-
+    if (not InventoryManager.Data[Player].Data.Inventory) then -- to stop it from waiting cuz roblox bad
+        repeat RunService.Heartbeat:Wait();
+            print("Waiting for inventory");
+        until InventoryManager.Data[Player].Data.Inventory;
+    end
+    
     return InventoryManager.Data[Player].Data.Inventory;
 end
 
@@ -68,13 +69,13 @@ function InventoryManager:GetMockPlayerData()
             Slot.Item = {
                 Icon = "rbxassetid://267895468",
                 Class = "Ammo"
-            }
+            };
             Slot.Quantity = math.random(1, 10);
         elseif (Chance == 2) then
             Slot.Item = {
                 Icon = "rbxassetid://6840728426",
                 Class = "Rock"
-            }
+            };
             Slot.Quantity = math.random(1, 10);
         end
 

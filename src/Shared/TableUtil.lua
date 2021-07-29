@@ -4,7 +4,7 @@
 
 --[[
 	
-	TableUtil.Copy(Table tbl)
+	TableUtil.Copy(Table tbl
 	TableUtil.CopyShallow(Table tbl)
 	TableUtil.Sync(Table tbl, Table templateTbl)
 	TableUtil.Print(Table tbl, String label, Boolean deepPrint)

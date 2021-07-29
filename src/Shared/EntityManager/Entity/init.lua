@@ -1,4 +1,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage");
+local HttpService = game:GetService("HttpService");
+
 local Shared = ReplicatedStorage:WaitForChild("Aero"):WaitForChild("Shared");
 
 require(Shared:WaitForChild("Types")); -- Import all base types
@@ -11,12 +13,15 @@ export type Entity = {
 	Droppable: boolean?,
 	Drop: (Vector3?, CFrame?) -> boolean,
 	RestrictedOverrides: {[string]: boolean},
-	AppliedEntityMethods: {[string]: boolean}
+	AppliedEntityMethods: {[string]: boolean},
+	Id: string
 };
 
 local Entity = {
 	RestrictedOverrides = {["new"] = true, ["Create"] = true, ["Update"] = true},
 	AppliedEntityMethods = {},
+	ClassName = "Entity",
+	IsEntity = true
 };
 Entity.__index = Entity;
 
@@ -31,7 +36,7 @@ end
 function Entity:SafeFireSignal(SignalIndex:string, ...)
 	local SignalToFire = self[SignalIndex];
 
-	if (SignalToFire and type(SignalToFire) == "table" and SignalToFire._connections) then -- Verify that it's a signal with [...]._connections
+	if (SignalToFire and type(SignalToFire) == "table" and SignalToFire._connections) then -- Verify that it's a signal with (...)._connections
 		SignalToFire:Fire(...);
 	elseif (SignalToFire and type(SignalToFire) == "function") then -- If it's a function then just call it
 		SignalToFire(self, ...);
@@ -41,7 +46,7 @@ end
 function Entity:Update()
 	local NewAppliedEntityMethods = {};
 	for index, value in pairs(self) do
-		if (EntityMethods[index] and value and not NewAppliedEntityMethods[index]) then			
+		if (EntityMethods[index] and value and not NewAppliedEntityMethods[index]) then
 			local DidApplyMethods, DisableOverride = EntityMethods[index].Apply(self);
 
 			if (not DidApplyMethods) then continue; end;
@@ -69,7 +74,7 @@ function Entity:Update()
 	self.AppliedEntityMethods = NewAppliedEntityMethods;
 end
 
-function Entity.new(DefaultEntityData, EntityData:Entity)
+function Entity.new(DefaultEntityData, Manager, EntityData:Entity)
 	local this = DefaultEntityData or {};
 
 	for index, value in pairs(EntityData or {}) do
@@ -78,8 +83,11 @@ function Entity.new(DefaultEntityData, EntityData:Entity)
 
 	this = setmetatable(this, Entity);
 
-	this:SafeFireSignal("EntityCreated");
+	this.Id = HttpService:GenerateGUID(false);
+
+	this.Manager = Manager;
 	this:Update();
+	this:SafeFireSignal("EntityCreated");
 
 	return this;
 end

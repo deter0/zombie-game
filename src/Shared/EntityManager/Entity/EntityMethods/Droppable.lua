@@ -1,7 +1,7 @@
 local Droppable = {};
 
 function Droppable:Drop(Position:Vector3, CFrameTarget:CFrame?):boolean
-	self.Model.Parent = workspace;
+	self.Model.Parent = workspace:WaitForChild("DroppedItems");
 
 	if (Position) then
 		self.Model.Position = Position;
@@ -9,7 +9,7 @@ function Droppable:Drop(Position:Vector3, CFrameTarget:CFrame?):boolean
 		self.Model.CFrame = CFrameTarget;
 	end
 
-	if (self.ModelAnchorWhenDropped) then
+	if (self.ModelAnchorWhenDropped ~= nil) then
 		self.Model.Anchored = self.ModelAnchorWhenDropped;
 	end
 

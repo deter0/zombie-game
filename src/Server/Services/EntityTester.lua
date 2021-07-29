@@ -13,21 +13,11 @@ function EntityTester:Start()
 		Model = workspace:WaitForChild("CoolBall"),
 		Droppable = true, -- Appends method :Drop and :Pickup
 		ModelAnchorWhenDropped = false,
+		ReplicateToClient = true,
 	});
 
-	local s = os.clock();
-	-- for i = 1, 100000 do
-	-- 	local Ball = EntityManager:CreateEntityFromTemplate("Ball");
-
-	-- 	if (i % 50000 == 0) then wait(.2); end;
-	-- end
-	print("Generated entities in", os.clock() - s);
-
-	wait(50000); -- dont clear them from memory for testing
-
-	-- function Ball2:Update()
-	-- 	print("a");
-	-- end
+	local MyCoolBall  = EntityManager:CreateEntityFromTemplate("Ball");
+	MyCoolBall:Drop(Vector3.new(0, 5, 0));
 end
 
 return EntityTester;

@@ -28,14 +28,18 @@ local Delays_ = {
 local RunService = game:GetService("RunService");
 local ContentProvider = game:GetService("ContentProvider");
 
-function ImageSequencePlayer:Play(Target, Interval:number, Images, Delays)
+function ImageSequencePlayer:Play(Target, Interval:number, Images, Delays, COLOR)
 	local Player = {
 		Loaded = Signal.new(),
+		Finished = Signal.new(),
 		Stop = function(self)
 			self.Loop = self.Loop and self.Loop:Disconnect() and nil;
+			self.Loaded:DisconnectAll();
+			self.Loaded:Destroy();
+			self.Finished:DisconnectAll();
+			self.Finished:Destroy();
 			for _, v in ipairs(self.ImageLabels) do v:Destroy(); end;
 			table.clear(self);
-
 			warn("Stopped gif player");
 		end
 	};
@@ -45,9 +49,12 @@ function ImageSequencePlayer:Play(Target, Interval:number, Images, Delays)
 		warn(Images);
 		
 		for index, Image in ipairs(Images) do
+			if (index % 50 == 0) then wait(.1); end;
+
 			local ImageLabel = Instance.new("ImageLabel");
 			ImageLabel.Size = UDim2.new(1, 0, 1, 0);
 			ImageLabel.Image = Image;
+			ImageLabel.ImageColor3 = Target.ImageColor3 or Color3.new(1,1,1);
 			ImageLabel.Visible = true;
 			ImageLabel.Name = Image;
 			ImageLabel.Parent = Target;
@@ -57,20 +64,56 @@ function ImageSequencePlayer:Play(Target, Interval:number, Images, Delays)
 			ImageLabels[index] = ImageLabel;
 		end
 		
-		
+		-- local Images = {};
+		-- local InsertService = game:GetService("InsertService");
+		-- local function getImageIdFromDecal(decalId)
+		-- 	local decal = InsertService:LoadAsset(decalId):FindFirstChildWhichIsA("Decal")
+		-- 	return decal.Texture
+		-- end
+
+		-- local Decal = workspace.DecalPart.Decal;
+		-- local Animation = require(game.ReplicatedStorage.Aero.Shared.Animations.Logo);
+		-- for _, image in ipairs(Animation) do
+		-- 	local ids = tonumber(string.match(image, "%d+"));
+		-- 	table.insert(Images, getImageIdFromDecal(ids));
+		-- end
+		-- local str = "";
+		-- for i, v in ipairs(Images) do
+		-- 	str ..= "\""..v.."\",\n";
+		-- end
+		-- print(str);
+
 		local LastFrameInterval = 0;
 		local CurrentIndex = 1;
 		local CurrentImg;
 
-		ContentProvider:PreloadAsync(ImageLabels);
+		local half = {};
+		local otherHalf = {};
+
+		for i, v in ipairs(ImageLabels) do
+			if (i < #ImageLabels/2) then
+				half[#half + 1] = v;
+			else
+				otherHalf[#otherHalf + 1] = v;
+			end
+		end
+
+		ContentProvider:PreloadAsync(half);
+		wait(2);
+		print("Loading other half");
+		ContentProvider:PreloadAsync(otherHalf);
 		Player.ImageLabels = ImageLabels;
 
 		Player.Loaded:Fire();
+		Player.DidLoad = true;
 
 		Player.Loop = RunService.Heartbeat:Connect(function()
-			if ((tick() - LastFrameInterval) > (Interval + (Delays[CurrentIndex] or 0))) then
+			if (Player.DidLoad and (time() - LastFrameInterval) > (Interval + (Delays[CurrentIndex] or 0))) then
 				CurrentIndex += 1;
 				CurrentIndex = (CurrentIndex % #Images) + 1;
+				if ((CurrentIndex %#Images) + 1 == #Images) then
+					Player.Finished:Fire();
+				end
 				
 				for _, Image in ipairs(ImageLabels) do
 					Image.Visible = false;
@@ -83,7 +126,7 @@ function ImageSequencePlayer:Play(Target, Interval:number, Images, Delays)
 					CurrentImg = ImageLabels[CurrentIndex];
 				end
 
-				LastFrameInterval = tick();
+				LastFrameInterval = time();
 			end
 		end)
 	end)

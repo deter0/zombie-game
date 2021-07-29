@@ -7,51 +7,14 @@ local LoadingScreen = {
 		"Getting services",
 		"Loading loading screen",
 		"Loading loading screen gif",
+		"Presenting logos",
 		"Waiting for fps framework",
 		"Loading materials",
 		"Finalizing"
 	},
 	CompletedStates = {},
 
-	LoadingAimation = {
-		"rbxassetid://7096641655",
-		"rbxassetid://7096638713",
-		"rbxassetid://7096637697",
-		"rbxassetid://7096637602",
-		"rbxassetid://7096637496",
-		"rbxassetid://7096637400",
-		"rbxassetid://7096637336",
-		"rbxassetid://7096637265",
-		"rbxassetid://7096637110",
-		"rbxassetid://7096637019",
-		"rbxassetid://7096636953",
-		"rbxassetid://7096636861",
-		"rbxassetid://7096636778",
-		"rbxassetid://7096636699",
-		"rbxassetid://7096636601",
-		"rbxassetid://7096636515",
-		"rbxassetid://7096636445",
-		"rbxassetid://7096636370",
-		"rbxassetid://7096636275",
-		"rbxassetid://7096636203",
-		"rbxassetid://7096636140",
-		"rbxassetid://7096636088",
-		"rbxassetid://7096636020",
-		"rbxassetid://7096635941",
-		"rbxassetid://7096635836",
-		"rbxassetid://7096635746",
-		"rbxassetid://7096635676",
-		"rbxassetid://7096635612",
-		"rbxassetid://7096635545",
-		"rbxassetid://7096635475",
-		"rbxassetid://7096635395",
-		"rbxassetid://7096635323",
-		"rbxassetid://7096635234",
-		"rbxassetid://7096635115",
-		"rbxassetid://7096635017",
-		"rbxassetid://7096634914",
-		"rbxassetid://7096634817"
-	}
+	LoadingAnimation = nil
 };
 
 function LoadingScreen:BuildGUI()
@@ -78,7 +41,7 @@ function LoadingScreen:BuildGUI()
 
 	self.ProgressBarBackground = self.ProgressBar:Clone();
 	self.ProgressBarBackground.ZIndex = 100;
-	
+
 	self.ProgressBarBackgroundGradient = Instance.new("UIGradient");
 	self.ProgressBarBackgroundGradient.Transparency = NumberSequence.new({
 		NumberSequenceKeypoint.new(0, .95),
@@ -103,9 +66,10 @@ function LoadingScreen:BuildGUI()
 	self.GifPlayer = Instance.new("ImageLabel");
 	self.GifPlayer.ImageTransparency = 1;
 	self.GifPlayer.BackgroundTransparency = 1;
-	self.GifPlayer.AnchorPoint = Vector2.new(1, 1);
-	self.GifPlayer.Position = UDim2.fromScale(1.02, 1.01);
-	self.GifPlayer.Size = UDim2.fromScale(.215, .5);
+	self.GifPlayer.AnchorPoint = Vector2.new(0.5, 0.5);
+	self.GifPlayer.Position = UDim2.fromScale(0.5, 0.5);
+	self.GifPlayer.Size = UDim2.fromOffset(800, 400);
+	self.GifPlayer.ImageColor3 = Color3.new(1, 1, 1);
 	self.GifPlayer.ZIndex = 5;
 
 	self.BackgroundGui.Parent = self.LoadingScreenGui;
@@ -120,8 +84,6 @@ end
 
 function LoadingScreen:LoadingProgressUpdated()
 	self.LoadingPercentage = #self.CompletedStates/#self.States;
-
-	print(self.LoadingPercentage, self.CompletedStates, self.States);
 end
 
 function LoadingScreen:SetLoadingState(NewState:string)
@@ -144,17 +106,32 @@ function LoadingScreen:StartProgressBarUpdates()
 	end))
 end
 
+local VERY_FAR = Vector3.new(1e8, 1e8, 1e8);
 function LoadingScreen:Start()
 	if (_G.LoadingScreenActive) then
 		return;
 	end
 
+	local ReplicatedFirst = game:GetService("ReplicatedFirst");
+	ReplicatedFirst:RemoveDefaultLoadingScreen();
+
 	_G.LoadingScreenActive = true;
 	self.Controllers.Fade:Out(0);
 
 	self:BuildGUI();
-	local ReplicatedFirst = game:GetService("ReplicatedFirst");
-	ReplicatedFirst:RemoveDefaultLoadingScreen();
+
+	local ReplicatedStorage = game:GetService("ReplicatedStorage");
+	local Shared = ReplicatedStorage:WaitForChild("Aero"):WaitForChild("Shared");
+
+	coroutine.resume(coroutine.create(function()
+		repeat RunService.Heartbeat:Wait();
+			workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable;
+			workspace.CurrentCamera.CFrame = CFrame.new(VERY_FAR);
+			workspace.CurrentCamera.Focus = workspace.CurrentCamera.CFrame;
+		until self.Finished;
+
+		workspace.CurrentCamera.CameraType = Enum.CameraType.Custom;
+	end));
 
 	self:StartProgressBarUpdates();
 
@@ -164,28 +141,26 @@ function LoadingScreen:Start()
 		game.Loaded:Wait();
 	end
 
-	
-	local ReplicatedStorage = game:GetService("ReplicatedStorage");
-	local Shared = ReplicatedStorage:WaitForChild("Aero"):WaitForChild("Shared");
-
 	self:SetLoadingState("Loading loading screen");
 
-	local GifPlayer = self.Controllers.ImageSequencePlayer:Play(self.GifPlayer, .08, self.LoadingAimation, {.2});
+	wait(4);
+	self.LoadingAnimation = require(Shared:WaitForChild("Animations"):WaitForChild("Logo"));
+	local GifPlayer = self.Controllers.ImageSequencePlayer:Play(self.GifPlayer, .04, self.LoadingAnimation, {[1] = 1.5, [#self.LoadingAnimation] = 5});
 
 	self:SetLoadingState("Loading loading screen gif");
 
-	GifPlayer.Loaded:Wait();
+	if (not RunService:IsStudio()) then
+		GifPlayer.Loaded:Wait();
+	end
+
+	self:SetLoadingState("Presenting logos");
+
+	GifPlayer.Finished:Wait();
 
 	self:SetLoadingState("Waiting for fps framework");
 
 	if (not self.Controllers.FPSFramework.IsLoaded) then
 		self.Controllers.FPSFramework.Loaded:Wait();
-	end
-
-	self:SetLoadingState("Finalizing");
-
-	if (not RunService:IsStudio()) then
-		wait(4);
 	end
 
 	self:SetLoadingState("Loading materials");
@@ -199,15 +174,20 @@ function LoadingScreen:Start()
 		ToLoad[#ToLoad + 1] = ToLoadInstance;
 	end
 
-	ContentProvider:PreloadAsync(ToLoad, function(id)
-		print("Loaded", id);
-	end);
+	ContentProvider:PreloadAsync(ToLoad);
+
+	self:SetLoadingState("Finalizing");
+
+	if (not RunService:IsStudio()) then
+		wait(4);
+	end
 
 	self:SetLoadingState(nil);
 	GifPlayer:Stop();
-
-	self.LoadingScreenGui.Enabled = false;
+	self.LoadingScreenGui:Destroy();
 	self.Controllers.Fade:In(1.5);
+	self.Finished = true;
+	self.LoadingAnimation = nil;
 end
 
 return LoadingScreen;
