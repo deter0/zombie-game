@@ -25,7 +25,7 @@ function AmmoGuiController:Start()
 
 	self:Reloading(false);
 
-	self.AmmoDirectory = ReplicatedStorage:WaitForChild("Ammo"):WaitForChild(Base64:Encode(tostring(Player.UserId)));
+	self.AmmoDirectory = ReplicatedStorage:WaitForChild("Ammo"):WaitForChild(Player.Name);
 
 	self:Update();
 	
@@ -41,8 +41,8 @@ local function GetFormattedString(String:string|number):string
 end
 
 function AmmoGuiController:Update()
-	local CurrentAmmo = self.AmmoDirectory:WaitForChild("ClipAmmo").Value;
-	local AmmoRemaining = self.AmmoDirectory:WaitForChild("AmmoInInventory").Value;
+	local CurrentAmmo = self.AmmoDirectory:WaitForChild("InClip").Value;
+	local AmmoRemaining = self.AmmoDirectory:WaitForChild("Reserve").Value;
 
 	local CurrentAmmoText = GetFormattedString(CurrentAmmo);
 	local AmmoRemainingText = GetFormattedString(AmmoRemaining);

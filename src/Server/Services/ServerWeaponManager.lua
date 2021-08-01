@@ -3,6 +3,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage");
 local Weapons = game:GetService("ServerStorage"):WaitForChild("Weapons");
 local FastCast = require(ReplicatedStorage:WaitForChild("FastCast"));
 
+local HttpService = game:GetService("HttpService");
+
 local Events = ReplicatedStorage:WaitForChild("Events");
 local Shared = ReplicatedStorage:WaitForChild("Aero"):WaitForChild("Shared");
 
@@ -137,6 +139,26 @@ function WeaponManager:FiredRequest(Player, State:boolean|nil)
 	end
 end
 
+function WeaponManager:SubtractAmmo(Player:Player)
+	local PlayerData = self:GetPlayerData(Player);
+
+	local CurrentAmmoData = PlayerData.CurrentAmmoData;
+
+	if (CurrentAmmoData) then
+		print("Current ammo data:", CurrentAmmoData);
+
+		local Delta = PlayerData.WeaponConfig.CastingConfig.BulletsPerShot or 1;
+		local AmmoPrime = CurrentAmmoData.InClip - Delta;
+
+		if (AmmoPrime > 0) then
+			CurrentAmmoData.InClip -= Delta;
+			PlayerData.AmmoDirectory.InClip.Value = CurrentAmmoData.InClip;
+		else
+			print("Needs to reload.");
+		end
+	end
+end
+
 function WeaponManager:Fired(Player:Player)
 	-- if (true) then return false; end;
 
@@ -144,10 +166,12 @@ function WeaponManager:Fired(Player:Player)
 
 	if (not PlayerData.WeaponConfig) then return Status(400); end;
 	if (not PlayerData.Equipped) then return Status(400); end;
+	if (not PlayerData.CurrentAmmoData) then return Status(400); end;
+
+
+	self:SubtractAmmo(Player);
 
 	if (not PlayerData.LastShot or (time() - PlayerData.LastShot >= 60/PlayerData.WeaponConfig.FireRate)) then
-		self.Services.AmmoManager:SubtractAmmo(Player, PlayerData.WeaponConfig.BulletsPerShot);
-
 		PlayerData.LastShot = time();
 		
 		local Muzzle = PlayerData.Weapon:WaitForChild("Handle", 2):FindFirstChild("Muzzle");
@@ -201,8 +225,28 @@ function WeaponManager:CreateStockData(Player:Player)
 		CachedAnimations = {},
 		LoadedAnimations = {},
 		WeaponAmmo = {},
-		Aiming = false
+		Aiming = false,
 	};
+
+	local AmmoDirectory = Instance.new("Folder");
+
+	local InClip:IntValue = Instance.new("IntValue");
+	local Reserve:IntValue = Instance.new("IntValue");
+
+	InClip.Name = "InClip";
+	Reserve.Name = "Reserve";
+
+	AmmoDirectory.Name = Player.Name;
+
+	Reserve.Value = self.Services.InventoryManager:GetItemQuantity(Player, "Ammo");
+	InClip.Value = -1;
+
+	InClip.Parent = AmmoDirectory;
+	Reserve.Parent = AmmoDirectory;
+
+	AmmoDirectory.Parent = ReplicatedStorage:WaitForChild("Ammo");
+
+	PlayerData.AmmoDirectory = AmmoDirectory;
 
 	Player.CharacterAdded:Connect(function(Character:Model)
 		table.clear(self.Data[Player].CachedAnimations);
@@ -210,6 +254,7 @@ function WeaponManager:CreateStockData(Player:Player)
 		for _, AnimationTrack:AnimationTrack in ipairs(PlayerData.LoadedAnimations) do
 			AnimationTrack:Destroy();
 		end
+
 		table.clear(PlayerData.LoadedAnimations);
 	end)
 
@@ -221,23 +266,26 @@ function WeaponManager:EquipWeapon(Player:Player, WeaponName:string)
 	if (not Player.Character or not Player.Character.PrimaryPart or not Player.Character:FindFirstChild("Humanoid")) then return 400; end;
 	
 	local PlayerData = self:GetPlayerData(Player);
-	local Weapon:Model = Weapons:FindFirstChild(WeaponName);
+	local Weapon:Model = ReplicatedStorage:WaitForChild("Cache"):FindFirstChild(WeaponName..Player.Name) or Weapons:FindFirstChild(WeaponName):Clone();
 	
 	if (not Weapon) then
 		return 404;
 	end
 
-	-- if (WeaponName == PlayerData.Equipped) then return 200; end;
-
-	Weapon = Weapon:Clone();
+	Weapon = Weapon;
 	Weapon:WaitForChild("Handle").CFrame = CFrame.new(10000, 10000, 10000);
 	Weapon.Name = Player.Name;
 
 	Weapon.Parent = workspace.Weapons;
 
+	if (PlayerData.Weapon) then
+		PlayerData.Weapon.Name ..= Player.Name;
+		PlayerData.Weapon.Parent = ReplicatedStorage:WaitForChild("Cache");
+	end
+
 	PlayerData.Equipped = WeaponName;
 	PlayerData.Weapon = Weapon;
-	PlayerData.Maid.Weapon = Weapon;
+	-- PlayerData.Maid.Weapon = Weapon;
 
 	if (PlayerData.WeaponConfig) then
 		table.clear(PlayerData.WeaponConfig);
@@ -245,6 +293,34 @@ function WeaponManager:EquipWeapon(Player:Player, WeaponName:string)
 	end
 
 	PlayerData.WeaponConfig = require(Weapon:WaitForChild("Config"));
+
+	local WeaponId = Weapon:GetAttribute("Id");
+
+	print("Weapon id:", WeaponId);
+
+	if (not WeaponId) then
+		WeaponId = HttpService:GenerateGUID(false);
+		Weapon:SetAttribute("Id", WeaponId);
+
+		local AmmoData = self:GetAmmoData(PlayerData, PlayerData.WeaponConfig);
+		PlayerData.WeaponAmmo[WeaponId] = AmmoData;
+
+		print("Set ammo data", AmmoData);
+	end
+
+	local AmmoData = PlayerData.WeaponAmmo[WeaponId];
+
+	print("Prexisting data", AmmoData);
+
+	if (PlayerData.EquippedId and PlayerData.CurrentAmmoData) then
+		PlayerData.WeaponAmmo[PlayerData.EquippedId] = PlayerData.CurrentAmmoData;
+		print("Saved ammo data");
+	end
+
+	PlayerData.EquippedId = WeaponId;
+	PlayerData.CurrentAmmoData = AmmoData;
+
+	print("Current ammo data:", PlayerData.CurrentAmmoData);
 
 	local WeaponMotor6DDirectory = Player.Character:WaitForChild("RightHand");
 	local WeaponMotor6D = WeaponMotor6DDirectory:FindFirstChild("Weapon") or Instance.new("Motor6D");
@@ -255,9 +331,6 @@ function WeaponManager:EquipWeapon(Player:Player, WeaponName:string)
 	WeaponMotor6D.Part1 = Weapon.Handle;
 
 	WeaponMotor6D.Parent = WeaponMotor6DDirectory;
-
-	local Identifier = self.Services.AmmoManager:PlayerEquippedWeapon(Player, WeaponName, PlayerData.WeaponConfig, PlayerData.WeaponAmmo[WeaponName]);
-	PlayerData.WeaponAmmo[WeaponName] = Identifier;
 
 	for _, Animation:Animation in ipairs(Weapon:WaitForChild("ServerAnimations"):GetChildren()) do
 		local CachedAnimation = PlayerData.CachedAnimations[Animation.AnimationId];
@@ -277,6 +350,12 @@ function WeaponManager:EquipWeapon(Player:Player, WeaponName:string)
 	end
 
 	return 200;
+end
+
+function WeaponManager:GetAmmoData(PlayerData, WeaponConfig)
+	return {
+		InClip = 30,
+	};
 end
 
 function WeaponManager:SetAiming(Player:Player, IsAiming:boolean)
