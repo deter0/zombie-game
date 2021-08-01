@@ -7,12 +7,14 @@ local Base64 = require(Shared:WaitForChild("Base64"));
 local CanRayPierce = require(Shared:WaitForChild("CanRayPierce"));
 local FastCast = require(ReplicatedStorage:WaitForChild("FastCast"));
 
+FastCast.VisualizeCasts = false;
+FastCast.DebugLogging = false;
+
+local BulletImpacts = require(script.Parent:WaitForChild("BulletImpacts"));
+
 local Hitmarker = require(Shared:WaitForChild("Hitmarker"));
 
 local CollectionService = game:GetService("CollectionService");
-
-FastCast.VisualizeCasts = false;
-FastCast.DebugLogging = false;
 
 local Events = ReplicatedStorage:WaitForChild("Events");
 
@@ -43,38 +45,43 @@ function FiringHandler:GetBullet()
 	return Bullet;
 end
 
-local VERY_FAR = Vector3.new(-1e6, 1e6, 0);
+local VERY_FAR = Vector3.new(0, -25, 0);
 function FiringHandler:ReturnBullet(Bullet) -- ? Over engineered?
 	Bullet:SetAttribute("Active", false);
-	Bullet.Transparency = 1;
+	Bullet.CFrame = CFrame.new(VERY_FAR);
 end
 
 
-function FiringHandler:CanRayPierce(Cast, RaycastResult, ...) -- TODO
+function FiringHandler:CanRayPierce(Cast, RaycastResult:RaycastResult, ...) -- TODO
 	local CanPierce = CanRayPierce(Cast, RaycastResult, ...);
 
 	Cast.UserData.Damaged = Cast.UserData.Damaged or {};
 
-	if (CanPierce and not Cast.UserData.Damaged[RaycastResult.Instance.Parent]) then
-		local Humanoid = RaycastResult.Instance.Parent:FindFirstChild("Humanoid");
-
+	local Humanoid = RaycastResult.Instance.Parent:FindFirstChildWhichIsA("Humanoid") or RaycastResult.Instance.Parent.Parent:FindFirstChildWhichIsA("Humanoid");
+	
+	if (not Cast.UserData.Damaged[RaycastResult.Instance.Parent]) then
 		if (Humanoid) then
 			Cast.UserData.Damaged[RaycastResult.Instance.Parent] = true;
-			print("Do damage here");
+			Cast.UserData.Hits = Cast.UserData.Hits and Cast.UserData.Hits + 1 or 1;
 
-			if (Humanoid.Health > 0) then
-				Thread.SpawnNow(function()
-					local Damage = Events:WaitForChild("Shot"):InvokeServer(Cast.UserData, Humanoid.Parent, RaycastResult.Position);
-
-					if (Damage) then
-						Hitmarker:Hit(RaycastResult.Position, Damage);
-					end
-				end)
-			end
+			Thread.SpawnNow(function()
+				local Damage = Events:WaitForChild("Shot"):InvokeServer(
+					Cast.UserData,
+					Humanoid.Parent,
+					RaycastResult.Position,
+					RaycastResult.Instance
+				);
+				
+				if (Damage) then
+					Hitmarker:Hit(RaycastResult.Position, Damage);
+				end
+			end)
 		end
 	end
 
-	return CanPierce;
+	BulletImpacts:Impacted(RaycastResult.Position, RaycastResult.Normal, RaycastResult.Material);
+
+	return Humanoid and true or CanPierce;
 end
 
 local TAU = math.pi * 2;
@@ -132,14 +139,13 @@ function FiringHandler:Fire(Direction:Vector3, MuzzlePosition:Vector3) -- TODO
 end
 
 function FiringHandler:OnRayHit(Cast, RaycastResult) -- TODO
-	if (RaycastResult.Instance.Parent:FindFirstChild("Humanoid")) then
-		print("Ray hit something -----", RaycastResult.Instance);
-		-- RaycastResult.Instance.Parent:FindFirstChild("Humanoid"):TakeDamage(15);
-	end
+	-- print("Hit");
 end
 
 function FiringHandler:OnRayTerminated(Cast) -- TODO
+	-- print("Terminated");
 	self:ReturnBullet(Cast.UserData.Bullet);
+	Cast.UserData.Bullet = nil;
 end
 
 -- * Can use OnRayPierced for velocity changes
@@ -152,11 +158,6 @@ function FiringHandler:OnRayUpdated(Cast, SegmentOrigin, SegmentDirection, Lengt
 		local baseCFrame = CFrame.new(SegmentOrigin, SegmentOrigin + SegmentDirection);
 		
 		Bullet.CFrame = baseCFrame * CFrame.new(0, 0, -(Length - BulletLength));
-		
-		Bullet.AssemblyLinearVelocity = Vector3.new();
-		Bullet.AssemblyAngularVelocity = Vector3.new();
-
-		-- Bullet.Size = Vector3.new(Bullet.Size.X, Bullet.Size.Y, Bullet.Size.Z );
 	else
 		print("No bullet");
 	end
@@ -223,9 +224,7 @@ function FiringHandler:MaintainBulletPositions()
 		RunService.Heartbeat:Connect(function()
 			for _, Bullet:BasePart in ipairs(self.Bullets) do
 				if (not Bullet:GetAttribute("Active")) then
-					Bullet.AssemblyLinearVelocity = Vector3.new();
-					Bullet.AssemblyAngularVelocity = Vector3.new();
-					Bullet.Position = VERY_FAR;
+					Bullet.CFrame = CFrame.new(VERY_FAR); -- force update
 				end
 			end
 		end)

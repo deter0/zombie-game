@@ -1,4 +1,6 @@
-local WeaponHandler = {};
+local WeaponHandler = {
+	Disabled = false, --* Initially disable it and enable it after loading is completed.
+};
 WeaponHandler.__index = WeaponHandler;
 
 local LoadedAnimationCache = {};
@@ -13,13 +15,12 @@ local TweenService = game:GetService("TweenService");
 
 local Shared = ReplicatedStorage:WaitForChild("Aero"):WaitForChild("Shared");
 
-local Maid = require(Shared:WaitForChild("Maid"));
--- local AudioEmitter = require(Shared:WaitForChild("AudioEmitter"));
 local FootstepSounds = require(Shared:WaitForChild("FootstepSounds"));
-local Spring = require(Shared:WaitForChild("Spring"));
 local AudioModule = require(Shared:WaitForChild("AudioModule"));
 local Thread = require(Shared:WaitForChild("Thread"));
+local Spring = require(Shared:WaitForChild("Spring"));
 local Signal = require(Shared:WaitForChild("Signal"));
+local Maid = require(Shared:WaitForChild("Maid"));
 
 local Player = game:GetService("Players").LocalPlayer;
 
@@ -196,17 +197,6 @@ function WeaponHandler:Equip(WeaponName:string)
 		warn("Got invalid status from server", Status);
 		return;
 	end
-
-
-	-- local ToLoad = {};
-	-- for _, Sounds in pairs(FootstepSounds.SoundIds) do
-	--     for _, Sound in ipairs(Sounds) do
-	--         ToLoad[#ToLoad+1] = Sound;
-	--     end
-	-- end
-
-	-- ContentProvider:PreloadAsync(ToLoad);
-	-- ToLoad = nil;
 
 	self:Remove();
 	self:SetCharacter(self.Character or Player.Character);
@@ -622,7 +612,7 @@ function WeaponHandler:Update(DeltaTime:number)
 
 	self.RunningCFrame = self.RunningCFrame or EmptyCFrame;
 	local RunningCFrame =
-		EmptyCFrame:Lerp(self.Running and (self.Weapon.Offsets:FindFirstChild("Running") and self.Weapon.Offsets.Running.Value or CFrame.new(.4, 0, -.3) * CFrame.Angles(0, math.rad(45), 0)) or EmptyCFrame, clamp(self.Speed or 0));
+		EmptyCFrame:Lerp(self.Running and (self.Weapon.Offsets:FindFirstChild("Running") and self.Weapon.Offsets.Running.Value or CFrame.new(.4, 0, -.3) * CFrame.Angles(0, math.rad(90), 0)) or EmptyCFrame, clamp(self.Speed or 0));
 
 	self.RunningCFrame = self.RunningCFrame:Lerp(RunningCFrame, clamp(5 * DeltaTime));
 

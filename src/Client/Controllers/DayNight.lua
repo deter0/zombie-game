@@ -40,9 +40,10 @@ local function Lerp(a:number, b:number, alpha:number):number
 end
 
 function Cycle:Start()
+	if (true) then return; end; -- TODO(deter): Enable this and make night settings look good
 	RunService.Heartbeat:Connect(function(DeltaTime)
 		local Now = tick();
-		local CurrentGameTime = (Now * 1/2) % 24;
+		local CurrentGameTime = (Now * 1/15) % 24; -- Now * 1/60 = real time, 1/15 = a good game day time
 
 		LightingService.ClockTime = CurrentGameTime;
 

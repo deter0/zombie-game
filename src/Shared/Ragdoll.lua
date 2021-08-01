@@ -103,18 +103,24 @@ function Ragdoll.new(character)
 	local self = setmetatable({}, Ragdoll)
 	self.character = character
 
+	if (character.PrimaryPart) then
+		character.PrimaryPart:Destroy();
+	end
+	if (character:FindFirstChild("Collider")) then
+		character.Collider:Destroy();
+	end
+
 	for _, v:BasePart in ipairs(character:GetChildren()) do
 		if (v:IsA("BasePart")) then
 			v.CustomPhysicalProperties = PhysicalProperties.new(100, .5, 1, .3, 1);
 			v.Anchored = false;
 			v.CanCollide = true;
 			v.RootPriority = 500;
+			v.Massless = false;
 			v.AssemblyLinearVelocity = Vector3.new();
 			v.AssemblyAngularVelocity = Vector3.new();
 		end
 	end
-
-	character.PrimaryPart:Destroy();
 
 	self.humanoid = character:WaitForChild("Humanoid")
 
@@ -211,6 +217,10 @@ function Ragdoll:setRagdolled(ragdolled, whitelist)
 	end
 end
 
+
+--- Does stuff
+-- @constructor Ragdoll.new()
+-- @treturn Ragdoll
 function Ragdoll:destroy()
 	self:setRagdolled(false)
 	for _, joint in pairs(self.joints) do

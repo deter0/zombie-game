@@ -149,45 +149,45 @@ function LoadingScreen:Start()
 
 	self:SetLoadingState("Loading loading screen gif");
 
-	if (not RunService:IsStudio()) then
-		GifPlayer.Loaded:Wait();
-	end
+	GifPlayer.Loaded:Wait();
 
 	self:SetLoadingState("Presenting logos");
 
-	GifPlayer.Finished:Wait();
+	if (not RunService:IsStudio()) then
+		GifPlayer.Finished:Wait();
+	end
 
 	self:SetLoadingState("Waiting for fps framework");
 
 	if (not self.Controllers.FPSFramework.IsLoaded) then
 		self.Controllers.FPSFramework.Loaded:Wait();
 	end
-
+	
 	self:SetLoadingState("Loading materials");
-	wait(.25);
-
+	
 	local ContentProvider = game:GetService("ContentProvider");
-
+	
 	local ToLoad = {};
-
+	
 	for _, ToLoadInstance:Instance in ipairs(ReplicatedStorage:WaitForChild("ToLoad"):GetChildren()) do
 		ToLoad[#ToLoad + 1] = ToLoadInstance;
 	end
-
+	
 	ContentProvider:PreloadAsync(ToLoad);
-
+	
 	self:SetLoadingState("Finalizing");
-
+	
 	if (not RunService:IsStudio()) then
 		wait(4);
 	end
-
+	
 	self:SetLoadingState(nil);
 	GifPlayer:Stop();
 	self.LoadingScreenGui:Destroy();
 	self.Controllers.Fade:In(1.5);
 	self.Finished = true;
 	self.LoadingAnimation = nil;
+	self.Controllers.FPSFramework:SetDisabled(false);
 end
 
 return LoadingScreen;

@@ -14,6 +14,10 @@ local InputManager = {
     Loaded = Signal.new()
 };
 
+function InputManager:SetDisabled(IsDisabled:bool)
+	self.WeaponHandler.Disabled = IsDisabled;
+end
+
 function InputManager:Start()
     self.ServerWeaponManager = self.Services.ServerWeaponManager;
     

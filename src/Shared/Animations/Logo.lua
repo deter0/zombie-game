@@ -221,4 +221,5 @@ return {
 	"http://www.roblox.com/asset/?id=7169003399",
 	"http://www.roblox.com/asset/?id=7169003332",
 	"http://www.roblox.com/asset/?id=7169003262",
+	"http://www.roblox.com/asset/?id=7168940625",
 }

@@ -20,7 +20,6 @@ local Wind = {
 };
 
 function Wind:UpdateStream(CameraPosition)
-    
     self.Streaming = {};
     
     for index, TaggedPart:BasePart|Bone in ipairs(self.AllParts) do

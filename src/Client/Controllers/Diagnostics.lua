@@ -9,7 +9,8 @@ local Diagnostics = {
 	RemoteFunctionsInvoke = 0,
 	RemoteEventsFired = 0,
 	FrameRate = 60,
-	DisplayFrameRate = 60
+	DisplayFrameRate = 60,
+	FrameData = {},
 };
 
 function Diagnostics:Start()
@@ -36,16 +37,31 @@ function Diagnostics:Start()
 		return a + (b - a) * alpha;
 	end
 
+	local c = 0;
 	RunService.RenderStepped:Connect(function(DeltaTime:number)
 		if ((time() - Updated) > .25) then
 			self.FrameRate = (DeltaTime);
-			
 			Updated = time();
 		end
+		
+		table.insert(self.FrameData, self.FrameRate);
+		if ((time() - c) > 10) then
+			table.clear(self.FrameData);
+			c = time();
+		end
+
+		local AverageFPS = 0;
+		for _, v in ipairs(self.FrameData) do
+			AverageFPS += v;
+		end
+		AverageFPS /= #self.FrameData;
 
 		self.DisplayFrameRate = Lerp(self.DisplayFrameRate, self.FrameRate, .1);
-		FPSText.Text = string.sub(1/self.DisplayFrameRate, 1, 5).. " FPS";
+		FPSText.Text = string.sub(1/self.DisplayFrameRate, 1, 5).. " FPS, average: ".. string.sub(1/AverageFPS, 1, 5).. " Min: ".. string.sub(1/math.max(unpack(self.FrameData) or AverageFPS), 1, 5);
 		FrameTimeText.Text = string.sub(self.DisplayFrameRate * 1000, 1, 5) .. "ms";
+
+
+
 
 		if ((time() - LastPingRequest) > self.PingUpdateIncrements) then
 			LastPingRequest = time();

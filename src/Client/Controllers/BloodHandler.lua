@@ -56,8 +56,25 @@ function BloodHandler:Start()
         self:OnBloodRayUpdated(...);
     end);
 
-	-- Events:WaitForChild("BloodEffect").OnClientEvent:Connect(function(...)
-    --     self:CastBlood(...);
+	-- Events:WaitForChild("BloodEffect").OnClientEvent:Connect(function(HitPosition:Vector3, TargetCharacter:Model)
+    --     -- self:CastBlood(...); -- TODO(deter): This is too unoptimized to use.
+	-- 	local TargetCharacterHumanoid:Humanoid = TargetCharacter:FindFirstChildWhichIsA("Humanoid");
+
+	-- 	if (TargetCharacterHumanoid and TargetCharacter:GetAttribute("Ragdolled") ~= true) then
+	-- 		if (TargetCharacterHumanoid.Health <= 0) then
+	-- 			local CharacterRagdoll = Ragdoll.new(TargetCharacter);
+	-- 			CharacterRagdoll:setRagdolled(true);
+
+	-- 			TargetCharacter:SetAttribute("Ragdolled", true);
+
+	-- 			Thread.Delay(50, function()
+	-- 				CharacterRagdoll:destroy();
+	-- 				CharacterRagdoll = nil;
+
+	-- 				TargetCharacter:SetAttribute("Ragdolled", false);
+	-- 			end)
+	-- 		end
+	-- 	end
     -- end)
 
     -- game:GetService("ContextActionService"):BindAction("Clickity click click", function(_, State)

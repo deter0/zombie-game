@@ -54,7 +54,7 @@ function InventoryController:Start()
 				InventorySlot:Destroy();
 			end
 
-			self.Inventory = self.InventoryManager:GetInventory();
+			self.Inventory = self.InventoryManager:GetInventory().Inventory;
 			self:DrawInventory(self.Gui:WaitForChild("Container"):WaitForChild("InventorySlotsContainer"));
 		end
 	end, false, Enum.KeyCode.E);

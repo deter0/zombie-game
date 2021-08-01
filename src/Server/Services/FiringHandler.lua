@@ -12,6 +12,7 @@ local CollectionService = game:GetService("CollectionService");
 
 local FiringHandler = {
 	BulletsPerPlayer = 50,
+	AllBullets = {},
 };
 
 function FiringHandler:GetBullets(Player:Player)
@@ -35,6 +36,7 @@ function FiringHandler:GetBullets(Player:Player)
 		for ind = 1, BulletsToHandle do
 			local Bullet = self:CreateBullet();
 			Bullet.Name = ind;
+			table.insert(self.AllBullets, {Bullet, Player});
 			CollectionService:AddTag(Bullet, "Bullet");
 			Bullet.Parent = PlayerBulletDirectory;
 			
@@ -64,6 +66,7 @@ function FiringHandler:CreateBullet() -- ?
 	Bullet.Color = YELLOW;
 	Bullet.Position = VERY_FAR;
 	Bullet.CanCollide = false;
+	Bullet.RootPriority = 127;
 	CollectionService:AddTag(Bullet, "Bullet");
 
 	return Bullet;
