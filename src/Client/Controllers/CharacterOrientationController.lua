@@ -31,7 +31,7 @@ function CharacterOrientationController:Start()
 				if (not Original[Player.Name]) then Original[Player.Name] = UpperTorso.C0; end;
 
 				UpperTorso.C0 = Original[Player.Name] * CFrame.Angles(Part.Orientation.X, 0, 0);
-			else
+			elseif (Player) then
 				Original[Player.Name] = nil;
 			end
 		end

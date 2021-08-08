@@ -112,7 +112,7 @@ function Ragdoll.new(character)
 
 	for _, v:BasePart in ipairs(character:GetChildren()) do
 		if (v:IsA("BasePart")) then
-			v.CustomPhysicalProperties = PhysicalProperties.new(100, .5, 1, .3, 1);
+			-- v.CustomPhysicalProperties = PhysicalProperties.new(100, .5, 1, .3, 1);
 			v.Anchored = false;
 			v.CanCollide = true;
 			v.RootPriority = 500;

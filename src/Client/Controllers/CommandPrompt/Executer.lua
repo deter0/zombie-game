@@ -6,6 +6,8 @@ local Maid = require(Shared:WaitForChild("Maid"));
 
 local ExecuterCommands = require(script.Parent:WaitForChild("ExecuterCommands"));
 
+local StringUtil = require(Shared:WaitForChild("StringUtil"));
+
 local Executer = {};
 Executer.__index = Executer;
 
@@ -118,7 +120,7 @@ function Executer:Run()
 	-- for index, Word in ipairs()
 end
 
-local Ignore = {};
+local Ignore = {";"};
 local Separators = {
 	["{"] = 2,
 	["}"] = 2,
@@ -133,6 +135,9 @@ function Executer:FormatIntoReadable()
 	local strings = {};
 
 	self.Command = string.gsub(self.Command, "%s+", " ")
+	for _, v in ipairs(Ignore) do
+		self.Command = string.gsub(self.Command, v, "");
+	end
 
 	for i = 1, #self.Command do
 		local letter = string.sub(self.Command, i, i);

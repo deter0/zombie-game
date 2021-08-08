@@ -20,30 +20,29 @@ end
 
 function InputManager:Start()
     self.ServerWeaponManager = self.Services.ServerWeaponManager;
-    
-    
-    self.CurrentWeapon = nil;
+
+	self.CurrentWeapon = nil;
     self.EnumBinds = {
         [1] = Enum.KeyCode.One,
         [2] = Enum.KeyCode.Two,
         [3] = Enum.KeyCode.Three,
         [4] = Enum.KeyCode.Four
     };
-    
+
     local Camera = workspace.CurrentCamera or workspace:WaitForChild("Camera");
     for _, v in ipairs(Camera:GetChildren()) do
         if (v.Name ~= "Viewmodel") then continue; end;
         v:Destroy();
     end
-    
+
     local ContextActionService = game:GetService("ContextActionService");
-    
+
     if (not game:IsLoaded()) then
         game.Loaded:Wait();
     end
-    
+
     self.FiringManager = require(script:WaitForChild("FiringHandler"));
-    
+
     self.Weapons = game:GetService("ReplicatedStorage"):WaitForChild("Weapons"):GetChildren();
     self.WeaponHandler = self.WeaponHandlerClass.new(self.FiringManager, self.ServerWeaponManager, self);
     self.Maid.WeaponHandler = self.WeaponHandler;

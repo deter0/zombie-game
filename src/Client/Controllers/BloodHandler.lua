@@ -138,7 +138,6 @@ function BloodHandler:RawCast(Position:Vector3, Ignore)
 end
 
 function BloodHandler:OnBloodCastHit(Cast, RaycastResult, SegmentVelocity, BloodObject)
-    -- warn("Blood hit something !!!", RaycastResult.Instance);
     self:MakeParticle(RaycastResult.Position, RaycastResult.Normal, Cast.UserData.Ignore);
 end
 

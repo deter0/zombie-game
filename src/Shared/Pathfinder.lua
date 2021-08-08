@@ -193,12 +193,13 @@ function Pathfinder:Compute() -- ! Deprecated & Incomplete see method :AStar ins
 			child.forward = x[index + 1];
 			child.backward = x[index - 1];
 
-			child.right =  nodes[indexA + 1] and nodes[indexA + 1][index];
-			child.left =  nodes[indexA - 1] and nodes[indexA - 1][index];
+			child.right = nodes[indexA + 1] and nodes[indexA + 1][index];
+			child.left = nodes[indexA - 1] and nodes[indexA - 1][index];
 
 			if (nodes[indexA + 1]) then
 				if (nodes[indexA + 1][index]) then
 					local sideConnector = nodes[indexA + 1][index].att;
+
 					createAttachment(child.att, sideConnector);
 					child.sideConnector = sideConnector;
 				end

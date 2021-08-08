@@ -82,9 +82,7 @@ function InventoryManager:GetReadableInventory(Player:Player):GetReadableInvento
 	for i = 1, 25 do -- TODO(deter): Make a variable for all inventory slots
 		local Item = PlayerData.Inventory[i];
 
-		print(Item, Item.Quantity);
-
-		if (Item and Item.Item) then
+		if (Item and Item.Item) then -- ? Better naming for `Item.Item`
 			ReadableInventory[#ReadableInventory+1] = Item;
 		end
 	end
@@ -109,8 +107,6 @@ function InventoryManager:GetItemQuantity(Player:Player, ItemClass:string):numbe
 	local ReadableInventory = self:GetReadableInventory(Player);
 
 	local Quantity = 0;
-
-	print(ReadableInventory);
 
 	for _, Item in ipairs(ReadableInventory) do
 		if (Item.Item.Class == ItemClass) then

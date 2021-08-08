@@ -16,6 +16,7 @@ local PlayerService = game:GetService("Players");
 local WeaponManager = {
 	Client = {},
 	Data = {},
+	Ragdolls = {},
 };
 
 function WeaponManager:GetPlayerData(Player:Player)
@@ -27,7 +28,7 @@ function WeaponManager:Start()
 		if (not self.Data[Player]) then return; end;
 
 		local PlayerData = self.Data[Player];
-		
+
 		PlayerData.Maid:Destroy();
 		table.clear(PlayerData);
 
@@ -70,9 +71,9 @@ function WeaponManager:PlayerDidHitSomeone(Player:Player, CastUserData, Characte
 		--     print("Player shot too early"); -- TODO: Cheat detection
 		--     return;
 		-- end
-		
+
 		PlayerData.LastShot = time();
-		
+
 		local Humanoid = Character:FindFirstChildWhichIsA("Humanoid");
 
 		if (Humanoid) then
@@ -84,7 +85,7 @@ function WeaponManager:PlayerDidHitSomeone(Player:Player, CastUserData, Characte
 
 			local Damage = PlayerData.WeaponConfig.Damage or 0;
 			Damage *= math.clamp((5-((CastUserData.Hits and CastUserData.Hits - 1) or 0))/5, 0.1, 1);
-			-- Damage *= 
+			-- Damage *=
 
 			local DistancePercentage = (Distance/PlayerData.WeaponConfig.CastingConfig.BulletMaxDist); -- Damage drop off over distance
 			local Falloff = 1 - (DistancePercentage ^ 2 * (3 - 2 * DistancePercentage));
@@ -110,13 +111,15 @@ function WeaponManager:Ragdoll(Character:Model, Direction:Vector3, HitPosition:V
 	local Humanoid = Character:FindFirstChildWhichIsA("Humanoid");
 	if (Humanoid and Character:GetAttribute("Ragdolled") ~= true) then
 		if (Humanoid.Health <= 0) then
-			print("Ragdolled");
 			local CharacterRagdoll = Ragdoll.new(Character);
 
 			CharacterRagdoll:setRagdolled(true);
-			
+
+			self.Ragdolls[#self.Ragdolls+1] = {CharacterRagdoll, time()};
+			self:DidRagdoll();
+
 			Character:SetAttribute("Ragdolled", true);
-			Character.UpperTorso:ApplyImpulse(-Direction * 500); --TODO(deter): Make it not a constant force.
+			Character.UpperTorso:ApplyImpulseAtPosition(Direction * 700, HitPosition); --TODO(deter): Make it not a constant force.
 
 			Thread.Delay(50, function()
 				CharacterRagdoll:destroy();
@@ -124,6 +127,20 @@ function WeaponManager:Ragdoll(Character:Model, Direction:Vector3, HitPosition:V
 				Character:Destroy();
 				Character = nil;
 			end)
+		end
+	end
+end
+
+function WeaponManager:DidRagdoll()
+	if (#self.Ragdolls > 15) then
+		local lowest, currentObject = math.huge, nil;
+		for i, v in ipairs(self.Ragdolls) do
+			if (v[2] < lowest) then lowest = v[2]; currentObject = i; end;
+		end
+
+		if (lowest and currentObject) then
+			self.Ragdolls[currentObject][1]:destroy();
+			table.remove(self.Ragdolls, currentObject);
 		end
 	end
 end
@@ -160,21 +177,24 @@ function WeaponManager:SubtractAmmo(Player:Player)
 end
 
 function WeaponManager:Fired(Player:Player)
-	-- if (true) then return false; end;
-
 	local PlayerData = self:GetPlayerData(Player);
 
 	if (not PlayerData.WeaponConfig) then return Status(400); end;
 	if (not PlayerData.Equipped) then return Status(400); end;
-	if (not PlayerData.CurrentAmmoData) then return Status(400); end;
+	if (not PlayerData.Weapon) then return Status(400); end;
 
+	-- if (not PlayerData.CurrentAmmoData) then return Status(400); end;
 
-	self:SubtractAmmo(Player);
+	-- self:SubtractAmmo(Player);
 
 	if (not PlayerData.LastShot or (time() - PlayerData.LastShot >= 60/PlayerData.WeaponConfig.FireRate)) then
 		PlayerData.LastShot = time();
-		
-		local Muzzle = PlayerData.Weapon:WaitForChild("Handle", 2):FindFirstChild("Muzzle");
+
+		local Muzzle = PlayerData.Weapon:WaitForChild("Handle"):FindFirstChild("Muzzle");
+
+		if (PlayerData.WeaponConfig.OnFired) then
+			PlayerData.WeaponConfig.OnFired(PlayerData);
+		end
 
 		if (Muzzle) then
 			for _, ParticleEmitter:ParticleEmitter|Light in ipairs(Muzzle:GetChildren()) do
@@ -185,9 +205,9 @@ function WeaponManager:Fired(Player:Player)
 				end
 			end
 
-			Thread.Delay(.15, function()
+			Thread.Delay(PlayerData.WeaponConfig.MuzzleFlashTime or .15, function()
 				for _, ParticleEmitter:ParticleEmitter|Light in ipairs(Muzzle:GetChildren()) do
-				   if (ParticleEmitter:IsA("Light")) then
+					if (ParticleEmitter:IsA("Light")) then
 						ParticleEmitter.Enabled = false;
 					end
 				end
@@ -211,7 +231,7 @@ function WeaponManager:Fired(Player:Player)
 				return;
 			end)
 		end
-		
+
 		return;
 	end
 end
@@ -228,25 +248,25 @@ function WeaponManager:CreateStockData(Player:Player)
 		Aiming = false,
 	};
 
-	local AmmoDirectory = Instance.new("Folder");
+	-- local AmmoDirectory = Instance.new("Folder");
 
-	local InClip:IntValue = Instance.new("IntValue");
-	local Reserve:IntValue = Instance.new("IntValue");
+	-- local InClip:IntValue = Instance.new("IntValue");
+	-- local Reserve:IntValue = Instance.new("IntValue");
 
-	InClip.Name = "InClip";
-	Reserve.Name = "Reserve";
+	-- InClip.Name = "InClip";
+	-- Reserve.Name = "Reserve";
 
-	AmmoDirectory.Name = Player.Name;
+	-- AmmoDirectory.Name = Player.Name;
 
-	Reserve.Value = self.Services.InventoryManager:GetItemQuantity(Player, "Ammo");
-	InClip.Value = -1;
+	-- Reserve.Value = self.Services.InventoryManager:GetItemQuantity(Player, "Ammo");
+	-- InClip.Value = -1;
 
-	InClip.Parent = AmmoDirectory;
-	Reserve.Parent = AmmoDirectory;
+	-- InClip.Parent = AmmoDirectory;
+	-- Reserve.Parent = AmmoDirectory;
 
-	AmmoDirectory.Parent = ReplicatedStorage:WaitForChild("Ammo");
+	-- AmmoDirectory.Parent = ReplicatedStorage:WaitForChild("Ammo");
 
-	PlayerData.AmmoDirectory = AmmoDirectory;
+	-- PlayerData.AmmoDirectory = AmmoDirectory;
 
 	Player.CharacterAdded:Connect(function(Character:Model)
 		table.clear(self.Data[Player].CachedAnimations);
@@ -254,6 +274,8 @@ function WeaponManager:CreateStockData(Player:Player)
 		for _, AnimationTrack:AnimationTrack in ipairs(PlayerData.LoadedAnimations) do
 			AnimationTrack:Destroy();
 		end
+
+		self.Data[Player].Firing = false;
 
 		table.clear(PlayerData.LoadedAnimations);
 	end)
@@ -263,29 +285,25 @@ function WeaponManager:CreateStockData(Player:Player)
 end
 
 function WeaponManager:EquipWeapon(Player:Player, WeaponName:string)
+	print("Got request");
 	if (not Player.Character or not Player.Character.PrimaryPart or not Player.Character:FindFirstChild("Humanoid")) then return 400; end;
-	
+
 	local PlayerData = self:GetPlayerData(Player);
-	local Weapon:Model = ReplicatedStorage:WaitForChild("Cache"):FindFirstChild(WeaponName..Player.Name) or Weapons:FindFirstChild(WeaponName):Clone();
-	
+	local Weapon:Model = Weapons:FindFirstChild(WeaponName);
+
 	if (not Weapon) then
 		return 404;
 	end
 
-	Weapon = Weapon;
+	Weapon = Weapon:Clone();
 	Weapon:WaitForChild("Handle").CFrame = CFrame.new(10000, 10000, 10000);
 	Weapon.Name = Player.Name;
 
 	Weapon.Parent = workspace.Weapons;
 
-	if (PlayerData.Weapon) then
-		PlayerData.Weapon.Name ..= Player.Name;
-		PlayerData.Weapon.Parent = ReplicatedStorage:WaitForChild("Cache");
-	end
-
 	PlayerData.Equipped = WeaponName;
 	PlayerData.Weapon = Weapon;
-	-- PlayerData.Maid.Weapon = Weapon;
+	PlayerData.Maid.Weapon = Weapon;
 
 	if (PlayerData.WeaponConfig) then
 		table.clear(PlayerData.WeaponConfig);
@@ -294,33 +312,33 @@ function WeaponManager:EquipWeapon(Player:Player, WeaponName:string)
 
 	PlayerData.WeaponConfig = require(Weapon:WaitForChild("Config"));
 
-	local WeaponId = Weapon:GetAttribute("Id");
+	-- local WeaponId = Weapon:GetAttribute("Id");
 
-	print("Weapon id:", WeaponId);
+	-- print("Weapon id:", WeaponId);
 
-	if (not WeaponId) then
-		WeaponId = HttpService:GenerateGUID(false);
-		Weapon:SetAttribute("Id", WeaponId);
+	-- if (not WeaponId) then
+	-- 	WeaponId = HttpService:GenerateGUID(false);
+	-- 	Weapon:SetAttribute("Id", WeaponId);
 
-		local AmmoData = self:GetAmmoData(PlayerData, PlayerData.WeaponConfig);
-		PlayerData.WeaponAmmo[WeaponId] = AmmoData;
+	-- 	local AmmoData = self:GetAmmoData(PlayerData, PlayerData.WeaponConfig);
+	-- 	PlayerData.WeaponAmmo[WeaponId] = AmmoData;
 
-		print("Set ammo data", AmmoData);
-	end
+	-- 	print("Set ammo data", AmmoData);
+	-- end
 
-	local AmmoData = PlayerData.WeaponAmmo[WeaponId];
+	-- local AmmoData = PlayerData.WeaponAmmo[WeaponId];
 
-	print("Prexisting data", AmmoData);
+	-- print("Prexisting data", AmmoData);
 
-	if (PlayerData.EquippedId and PlayerData.CurrentAmmoData) then
-		PlayerData.WeaponAmmo[PlayerData.EquippedId] = PlayerData.CurrentAmmoData;
-		print("Saved ammo data");
-	end
+	-- if (PlayerData.EquippedId and PlayerData.CurrentAmmoData) then
+	-- 	PlayerData.WeaponAmmo[PlayerData.EquippedId] = PlayerData.CurrentAmmoData;
+	-- 	print("Saved ammo data");
+	-- end
 
-	PlayerData.EquippedId = WeaponId;
-	PlayerData.CurrentAmmoData = AmmoData;
+	-- PlayerData.EquippedId = WeaponId;
+	-- PlayerData.CurrentAmmoData = AmmoData;
 
-	print("Current ammo data:", PlayerData.CurrentAmmoData);
+	-- print("Current ammo data:", PlayerData.CurrentAmmoData);
 
 	local WeaponMotor6DDirectory = Player.Character:WaitForChild("RightHand");
 	local WeaponMotor6D = WeaponMotor6DDirectory:FindFirstChild("Weapon") or Instance.new("Motor6D");

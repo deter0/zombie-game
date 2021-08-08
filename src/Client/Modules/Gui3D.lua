@@ -44,7 +44,8 @@ function Gui3D:Display()
 		self.Maid.RenderLoop = RunService.RenderStepped:Connect(function(DeltaTime:number)
 			self.Camera.CameraType = Enum.CameraType.Scriptable;
 	
-			local CameraCFrame = self.Container:WaitForChild("Gui").CFrame * CFrame.new(self.Container.Gui.CFrameOffset.Value);
+			-- local ZoomOut = ((3-self.Camera.ViewportSize.X/self.Camera.ViewportSize.Y)*4);
+			local CameraCFrame = self.Container:WaitForChild("Gui").CFrame * CFrame.new(self.Container.Gui.CFrameOffset.Value)-- * CFrame.new(0, 0, ZoomOut);
 	
 			if (self.TargetWindow) then
 				CameraCFrame = self.TargetWindow.CFrame * CFrame.new(self.TargetWindow.CFrameOffset.Value);
@@ -162,18 +163,14 @@ function Gui3D:Remove()
 	self:ClearCurrentWindow();
 	self.Maid:DoCleaning();
 	self.Camera.CameraType = Enum.CameraType.Custom;
-
-	warn("Cleared 3d gui");
 end
 
 function Gui3D:Toggle(State:boolean?)
-	print("Toggle called");
 	self.Toggled = State;
 
 	if (self.Toggled) then
 		self:Display();
 	else
-		warn("Removing self");
 		self:Remove();
 	end
 end

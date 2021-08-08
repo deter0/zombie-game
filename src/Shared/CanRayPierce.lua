@@ -1,7 +1,8 @@
-local MaterialAffectors =  {
+local MaterialEffectors =  {
 	[Enum.Material.Wood] = .8,
 	[Enum.Material.Glass] = .5,
-	[Enum.Material.Concrete] = 1.35,
+	[Enum.Material.Concrete] = 2,
+	[Enum.Material.Brick] = 2,
 };
 
 return function(Cast, RaycastResult:RaycastResult, SegmentVelocity)
@@ -24,9 +25,9 @@ return function(Cast, RaycastResult:RaycastResult, SegmentVelocity)
 		local OpposingRaycast = workspace:Raycast(RaycastResult.Position + (Direction * Size * 2), -(Direction * Size * 2));
 
 		if (OpposingRaycast) then
-			local RayCoverage = (RaycastResult.Position - OpposingRaycast.Position).Magnitude * (MaterialAffectors[OpposingRaycast.Material] or 1);
+			local RayCoverage = (RaycastResult.Position - OpposingRaycast.Position).Magnitude * (MaterialEffectors[OpposingRaycast.Material] or 1);
 
-			return (RayCoverage <= 2);
+			return (RayCoverage <= 3);
 		end
 	end
 

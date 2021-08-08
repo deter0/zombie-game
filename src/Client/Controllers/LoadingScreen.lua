@@ -143,7 +143,7 @@ function LoadingScreen:Start()
 
 	self:SetLoadingState("Loading loading screen");
 
-	wait(4);
+	task.wait(4);
 	self.LoadingAnimation = require(Shared:WaitForChild("Animations"):WaitForChild("Logo"));
 	local GifPlayer = self.Controllers.ImageSequencePlayer:Play(self.GifPlayer, .04, self.LoadingAnimation, {[1] = 1.5, [#self.LoadingAnimation] = 5});
 
@@ -178,7 +178,7 @@ function LoadingScreen:Start()
 	self:SetLoadingState("Finalizing");
 	
 	if (not RunService:IsStudio()) then
-		wait(4);
+		task.wait(4);
 	end
 	
 	self:SetLoadingState(nil);

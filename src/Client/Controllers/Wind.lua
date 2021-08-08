@@ -11,18 +11,18 @@ local Wind = {
     Range = 90,
     Noises = {},
     Original = {},
-    WindSpeed = 3,
-    WindStrength = .1,
+    WindSpeed = 4,
+    WindStrength = .15,
     UpdateStreamDistance = 50,
     WindDirection = CFrame.Angles(0, 0, 0),
     Streaming = {},
-    NoiseLayers = 7
+    NoiseLayers = 12
 };
 
 function Wind:UpdateStream(CameraPosition)
     self.Streaming = {};
     
-    for index, TaggedPart:BasePart|Bone in ipairs(self.AllParts) do
+    for index, TaggedPart:BasePart|Bone in next, self.AllParts do
         if (index % 300 == 0) then RunService.Heartbeat:Wait(); end;
         
         if (TaggedPart:IsA("BasePart")) then
@@ -87,7 +87,7 @@ function Wind:Start()
             self.Noises[i] = self:GetNoise(now, i);
         end
     
-        for index, Part in ipairs(self.Streaming) do
+        for index, Part in next, self.Streaming do
             local WindNoise = self.Noises[(index % self.NoiseLayers) + 1];
             local WindNoise2 = self.Noises[((index - 1) % self.NoiseLayers) + 1];
 

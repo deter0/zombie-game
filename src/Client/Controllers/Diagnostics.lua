@@ -45,9 +45,8 @@ function Diagnostics:Start()
 		end
 		
 		table.insert(self.FrameData, self.FrameRate);
-		if ((time() - c) > 10) then
-			table.clear(self.FrameData);
-			c = time();
+		if (#self.FrameData > 250) then
+			table.remove(self.FrameData, 1);
 		end
 
 		local AverageFPS = 0;
@@ -57,11 +56,8 @@ function Diagnostics:Start()
 		AverageFPS /= #self.FrameData;
 
 		self.DisplayFrameRate = Lerp(self.DisplayFrameRate, self.FrameRate, .1);
-		FPSText.Text = string.sub(1/self.DisplayFrameRate, 1, 5).. " FPS, average: ".. string.sub(1/AverageFPS, 1, 5).. " Min: ".. string.sub(1/math.max(unpack(self.FrameData) or AverageFPS), 1, 5);
+		FPSText.Text = string.sub(1/self.DisplayFrameRate, 1, 5).. " FPS, average: ".. string.sub(1/AverageFPS, 1, 5);
 		FrameTimeText.Text = string.sub(self.DisplayFrameRate * 1000, 1, 5) .. "ms";
-
-
-
 
 		if ((time() - LastPingRequest) > self.PingUpdateIncrements) then
 			LastPingRequest = time();

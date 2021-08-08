@@ -13,6 +13,8 @@ local Player = PlayerService.LocalPlayer;
 local AmmoGuiController = {}
 
 function AmmoGuiController:Start()
+	if (true) then return; end;
+	
 	local PlayerGui = Player:WaitForChild("PlayerGui");
 	local AmmoScreenGui:ScreenGui = PlayerGui:WaitForChild("Ammo");
 	local AmmoGuiContainer:Frame = AmmoScreenGui:WaitForChild("Container");
@@ -25,7 +27,7 @@ function AmmoGuiController:Start()
 
 	self:Reloading(false);
 
-	self.AmmoDirectory = ReplicatedStorage:WaitForChild("Ammo"):WaitForChild(Player.Name);
+	self.AmmoDirectory = ReplicatedStorage:WaitForChild("Ammo"):WaitForChild(Player.Name, 5); --!
 
 	self:Update();
 	

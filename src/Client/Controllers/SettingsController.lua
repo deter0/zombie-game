@@ -9,26 +9,34 @@ local SettingsController = {
 	Components = {},
 	ComponentMiddlewares = {
 		Slider = function(Value:number, Userdata)
-			print("AINSFIHNAIFHGU");
 			Userdata.ComponentGui:WaitForChild("Container"):WaitForChild("Value").Text = string.sub(tostring(Value), 1, 5);
 		end
-	}
+	},
+	Opened = false,
 };
 
 function SettingsController:Start()
 	self.Maid = self.Shared.Maid.new();
-	
+
 	self.WeaponHandler = self.Controllers.FPSFramework.WeaponHandler;
+
+	if (not self.WeaponHandler) then
+		local RunService = game:GetService("RunService");
+
+		repeat RunService.Heartbeat:Wait();
+			self.WeaponHandler = self.Controllers.FPSFramework.WeaponHandler;
+		until self.WeaponHandler;
+	end
 
 	self.GuiContainer = game:GetService("ReplicatedStorage"):WaitForChild("SettingsGui");
 
 	self.Gui3D = self.Gui3D.new(self.GuiContainer, "Settings");
 
+	task.wait(5); -- Why does it randomly open settings when I join the game
+	
 	ContextActionService:BindAction("Open Settings", function()
-		if (not self.Opened) then
-			self:OpenSettings();
-		end
-	end, false, Enum.KeyCode.F2);
+		self:OpenSettings();
+	end, false, Enum.KeyCode.P);
 end
 
 function SettingsController:Close()
@@ -38,6 +46,8 @@ function SettingsController:Close()
 	self.Maid:DoCleaning();
 	self.WeaponHandler:MenuToggled("Settings", false);
 	self.Opened = false;
+
+	self.Controllers.LightingConfigManager:SetConfig("Game");
 
 	self.GuiContainer.Parent = game:GetService("ReplicatedStorage");
 
@@ -54,6 +64,8 @@ function SettingsController:OpenSettings()
 	self.Opened = true;
 	self.GuiContainer.Parent = workspace;
 	self:Register();
+
+	self.Controllers.LightingConfigManager:SetConfig("Settings");
 
 	self.SaveAlert.Position = UDim2.new(0, 0, 1, 145);
 	self.SettingsContainer.Parent.Size = UDim2.new(1, 0, 1, 0);
@@ -82,9 +94,6 @@ function SettingsController:ClearCurrentSettings()
 
 			if (Component) then
 				Component:Destroy();
-				warn("Cleared setting component", Child.Name);
-			else
-				warn("Setting component not found", Child.Name);
 			end
 
 			Child:Destroy();
@@ -149,10 +158,10 @@ function SettingsController:BuildGui()
 		local BoundsX = SettingCategoryTitle.TextBounds.X;
 
 		Line.LayoutOrder = LayoutOrder;
-		
+
 		Line.GraphicsLine.Size = UDim2.new(0, BoundsX, 0, 5);
 		Line.GraphicsLine.GraphicsLine.Position = UDim2.fromOffset(BoundsX, 0);
-		
+
 		Line.Parent = self.SettingsContainer;
 		LayoutOrder += 1;
 
@@ -194,8 +203,6 @@ function SettingsController:BuildGui()
 				end)
 
 				self.Maid[SettingName.."Information"] = ComponentGui:WaitForChild("SettingName").MouseButton1Click:Connect(function()
-					warn("Opened");
-
 					if (not self.InformationOpen) then
 						self.Gui3D:ClearCurrentWindow();
 						self.InformationGui = self.Gui3D:SwitchWindows("Information");
@@ -256,7 +263,7 @@ function SettingsController:BuildGui()
 					self.Maid[SettingName.."Leave"] = ComponentGui.MouseLeave:Connect(function()
 						self.Maid[SettingName..'3']:Play();
 						self.Maid[SettingName..'4']:Play();
-						
+
 						self.Maid[SettingName..'1']:Pause();
 						self.Maid[SettingName..'2']:Pause();
 					end)

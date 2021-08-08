@@ -100,7 +100,6 @@ function ImageSequencePlayer:Play(Target, Interval:number, Images, Delays, COLOR
 
 		ContentProvider:PreloadAsync(half);
 		wait(2);
-		print("Loading other half");
 		ContentProvider:PreloadAsync(otherHalf);
 		Player.ImageLabels = ImageLabels;
 

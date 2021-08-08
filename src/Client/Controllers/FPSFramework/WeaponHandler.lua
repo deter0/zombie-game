@@ -1,3 +1,7 @@
+-- WEapon Handler
+-- Deter
+-- ??
+
 local WeaponHandler = {
 	Disabled = false, --* Initially disable it and enable it after loading is completed.
 };
@@ -11,12 +15,13 @@ local CollectionService = game:GetService("CollectionService");
 local UserInputService = game:GetService("UserInputService");
 local ContentProvider = game:GetService("ContentProvider");
 local TweenService = game:GetService("TweenService");
-
+local RunService =game:GetService("RunService");
 
 local Shared = ReplicatedStorage:WaitForChild("Aero"):WaitForChild("Shared");
 
 local FootstepSounds = require(Shared:WaitForChild("FootstepSounds"));
 local AudioModule = require(Shared:WaitForChild("AudioModule"));
+local Recoil = require(script.Parent:WaitForChild("Recoil"));
 local Thread = require(Shared:WaitForChild("Thread"));
 local Spring = require(Shared:WaitForChild("Spring"));
 local Signal = require(Shared:WaitForChild("Signal"));
@@ -33,6 +38,17 @@ end
 local function Lerp(a:number, b:number, alpha:number):number
 	return a + (b - a) * alpha;
 end
+
+-- print(-196.6/3)
+
+-- local function Lerp(a:number, b:number, alpha:number):number
+--     return a + (b - a) * alpha;
+-- end
+-- local abs = math.abs;
+-- local function Lerp3(x, a, b, c)
+--     return x >= 0 and Lerp(a, b, abs(x)) or Lerp(c, b, abs(x));
+-- end
+-- print(Lerp3(0, 10, 50, 25))
 
 local function IsStatusValid(Status:number):boolean
 	return (Status >= 200 and Status <= 299);
@@ -61,7 +77,7 @@ function WeaponHandler.new(FiringManager, ServerManager, env)
 			env = env,
 			Springs = {
 				Spread = Spring:create(),
-				Recoil = Spring:create(),
+				Recoil = Spring:create(4, 50, 3, 4),
 				Sway = Spring:create(4, 50, 6, 6),
 				WalkCycle = Spring:create(),
 				Camera = Spring:create(),
@@ -72,6 +88,7 @@ function WeaponHandler.new(FiringManager, ServerManager, env)
 			Spread = 0,
 			Speed = 0,
 			LoadingPercentageUpdated = Signal.new(),
+			Tick = 0,
 		},
 		WeaponHandler
 	);
@@ -186,9 +203,18 @@ function WeaponHandler:Equip(WeaponName:string)
 	if (WeaponName == self.Equipped) then return; end;
 	if (self.IsAMenuOpen) then return; end;
 
+	self.Tick = 0;
+
 	self.ActiveMaid = self.ActiveMaid or Maid.new();
 
 	if (self.Disabled) then warn("Disabled"); return; end;
+
+	if (not RunService:IsStudio()) then
+		Player.CameraMaxZoomDistance = 0;
+		Player.CameraMode = Enum.CameraMode.LockFirstPerson;
+	end
+
+	self.Firing = false;
 
 	local Status = self.ServerManager:Equipped(WeaponName);
 	self.env.Controllers.Diagnostics:InvokedRemoteFunction();
@@ -217,6 +243,16 @@ function WeaponHandler:Equip(WeaponName:string)
 		self.Viewmodel = ReplicatedStorage:WaitForChild("Viewmodel"):Clone();
 	end
 	CachedViewmodel = nil;
+
+	if (self.Recoil) then
+		table.clear(self.Recoil);
+	end
+	self.Recoil = Recoil.new();
+
+	if (self.WeaponShoveRecoil) then
+		table.clear(self.WeaponShoveRecoil);
+	end
+	self.WeaponShoveRecoil = Recoil.new();
 
 	if (self.LoadedAnimations) then
 		for _, AnimationTrack:AnimationTrack in pairs(self.LoadedAnimations) do
@@ -425,15 +461,19 @@ function WeaponHandler:FireActionCalled(_, State)
 		end
 	elseif (State == Enum.UserInputState.End) then
 		self:StopAnimation("Firing", .3);
-		ReplicatedStorage:WaitForChild("Events"):WaitForChild("Fired"):FireServer(false);
-		self.env.Controllers.Diagnostics:FiredRemoteEvent();
+
+		if (self.WeaponConfig.FireMode == 1) then
+			ReplicatedStorage:WaitForChild("Events"):WaitForChild("Fired"):FireServer(false);
+			self.env.Controllers.Diagnostics:FiredRemoteEvent();
+		end
+
 		self.Firing = false;
 	end
 end
 
 
 function WeaponHandler:PlayEquipAnimation()
-	self.EquipTweenInfo = self.WeaponConfig.EquipTweenInfo or self.EquipTweenInfo or TweenInfo.new(.6, Enum.EasingStyle.Circular, Enum.EasingDirection.Out);
+	local EquipTweenInfo = self.WeaponConfig.EquipTweenInfo or TweenInfo.new(.6, Enum.EasingStyle.Circular, Enum.EasingDirection.Out);
 	local EquipOffset = self.Weapon:WaitForChild("Offsets"):WaitForChild("ViewmodelOffset"):WaitForChild("Equip");
 
 	EquipOffset.Value = self.Weapon.Offsets.InitalEquip.Value;
@@ -442,7 +482,7 @@ function WeaponHandler:PlayEquipAnimation()
 	PlayTweenOnce(
 		EquipOffset,
 		{Value = Vector3.new()},
-		self.EquipTweenInfo,
+		EquipTweenInfo,
 		function()
 			self.EquipAnimationPlaying = false;
 		end
@@ -489,7 +529,7 @@ function WeaponHandler:PlayAnimation(AnimationTitle:string, PlaySpeed:number?)
 end
 
 function WeaponHandler:PlaySound(SoundName:string)
-	local Sound = self.Weapon:WaitForChild("Sounds"):FindFirstChild(SoundName);
+	local Sound:Sound = self.Weapon:WaitForChild("Sounds"):FindFirstChild(SoundName);
 
 	if (Sound) then
 		Sound = Sound:Clone();
@@ -497,7 +537,7 @@ function WeaponHandler:PlaySound(SoundName:string)
 
 		Sound:Play();
 
-		local Stopped; Stopped = Sound.Stopped:Connect(function()
+		local Stopped; Stopped = Sound.Ended:Connect(function()
 			Stopped:Disconnect();
 			Sound:Destroy();
 			Sound = nil;
@@ -523,11 +563,26 @@ local function clamp(x:number)
 end
 
 function WeaponHandler:Update(DeltaTime:number)
-	debug.profilebegin("WeaponHandler:Update");
+	-- debug.profilebegin("WeaponHandler:Update");
+	self.Tick += DeltaTime;
+
 	if (not self.Equipped) then return; end;
 	if (not self.WeaponConfig) then
 		self.WeaponConfig = require(self.Weapon:WaitForChild("Config"));
 	end
+
+	local Muzzle = self.Weapon.Handle:FindFirstChild("Muzzle");
+	local FirePart = self.Weapon:FindFirstChild("FirePart");
+
+	self.MuzzlePosition = Muzzle and Muzzle.WorldPosition or (FirePart and FirePart.Position) or self.Weapon.Handle.Position;
+	self.FireDirection = Camera.CFrame.LookVector;
+
+	-- if (FirePart) then
+	-- 	self.FireDirection = FirePart.CFrame.LookVector;
+	-- end
+
+	local NewCFrame = self.Recoil:Update(DeltaTime, Camera.CFrame);
+	Camera.CFrame = NewCFrame;
 
 	if (UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) and not self.Aiming) then
 		self:Aim(nil, Enum.UserInputState.Begin);
@@ -618,6 +673,10 @@ function WeaponHandler:Update(DeltaTime:number)
 
 	MasterOffset *= self.RunningCFrame;
 
+	local BreathingCFrame = CFrame.new() * CFrame.Angles(math.sin(self.Tick)/60 * (self.Aiming and .15 or 1), math.sin(self.Tick)/25 * (self.Aiming and .15 or 1), math.sin(self.Tick)/55 * (self.Aiming and .15 or 1));
+	self.BreathingCFrame = not self.BreathingCFrame and BreathingCFrame or self.BreathingCFrame:Lerp(BreathingCFrame, DeltaTime * 5);
+	MasterOffset *= self.BreathingCFrame;
+
 	self.JumpingVelocity = self.JumpingVelocity or EmptyCFrame;
 
 	self.JumpingVelocity = self.JumpingVelocity:Lerp(
@@ -629,6 +688,7 @@ function WeaponHandler:Update(DeltaTime:number)
 
 	local MouseDelta = UserInputService:GetMouseDelta();
 
+	self.Springs.Sway.Mass = self.WeaponConfig.Mass or 5;
 	self.Springs.Sway:shove(Vector3.new(MouseDelta.X / 200, MouseDelta.Y / 200) * (self.WeaponConfig.WeaponLightness or 1) * (self.Aiming and .5 or 1));
 
 	if (self.LoadedAnimations.Running) then
@@ -676,27 +736,45 @@ function WeaponHandler:Update(DeltaTime:number)
 
 	self.CrosshairCenter.Scale = Lerp(self.CrosshairCenter.Scale, self.Aiming and 0 or 1, DeltaTime * 15);
 
-	self.CrosshairDirection = not self.CrosshairDirection and Camera.CFrame.LookVector or self.CrosshairDirection:Lerp(Camera.CFrame.LookVector, clamp(DeltaTime * 18));
-	self.Crosshair.CFrame = CFrame.lookAt(Camera.CFrame.Position + (self.CrosshairDirection * 5), Camera.CFrame.Position);
+	self.CrosshairDirection = not self.CrosshairDirection and self.FireDirection or self.CrosshairDirection:Lerp(Camera.CFrame.LookVector, clamp(DeltaTime * 18));
+	self.Crosshair.CFrame = CFrame.lookAt(Camera.CFrame.Position + self.FireDirection * 5, Camera.CFrame.Position);
 
 	self.Viewmodel.RootPart.CFrame = Camera.CFrame:ToWorldSpace(CFrame.new(RecoilOffset) * CFrame.new(ShoveOffset));
 	self.Viewmodel.RootPart.CFrame *= CFrame.Angles(0,-ShoveOffset.X, ShoveOffset.Y);
 
 	self.Viewmodel.RootPart.CFrame *= MasterOffset * self.Sway;
 
+	local newCFrame = self.WeaponShoveRecoil:Update(DeltaTime, self.Viewmodel.RootPart.CFrame);
+	self.Viewmodel.RootPart.CFrame = newCFrame;
+
 	self:Footsteps();
 
 	AimingInfluence = nil;
 	GunSwayInfluence = nil;
 
-	debug.profileend();
+	-- pcall(function()
+		-- debug.profileend();
+	-- end)
 end
 
 function WeaponHandler:Fire()
 	if (self.Running) then return; end;
 	if (self.EquipAnimationPlaying) then return; end;
 
-	self.FiringManager:Fire(Camera.CFrame.LookVector, self.Weapon.Handle:WaitForChild("Muzzle").WorldPosition);
+	if (self.WeaponConfig.OnFired) then
+		self.WeaponConfig.OnFired(self);
+	end
+
+	local Muzzle = self.Weapon.Handle:FindFirstChild("Muzzle");
+
+	self.FiringManager:Fire(
+		self.FireDirection,
+		self.MuzzlePosition,
+		self.WeaponConfig.CastingConfig.MinBulletSpreadAngle * (self.Aiming and (self.WeaponConfig.AimingSpreadMultiplier or 0.33) or 1),
+		self.WeaponConfig.CastingConfig.MaxBulletSpreadAngle * (self.Aiming and (self.WeaponConfig.AimingSpreadMultiplier or 0.33) or 1)
+	);
+
+	self.WeaponShoveRecoil:Recoil(3, 75);
 
 	if (self.WeaponConfig.Pumping) then
 		self:Pump();
@@ -704,38 +782,52 @@ function WeaponHandler:Fire()
 
 	self.FireIteration = not self.FireIteration and 1 or self.FireIteration + 1;
 
-	for _, ParticleEmitter:ParticleEmitter|Light in ipairs(self.Weapon.Handle:WaitForChild("Muzzle"):GetChildren()) do
-		if (ParticleEmitter:IsA("ParticleEmitter")) then
-			ParticleEmitter:Emit(ParticleEmitter:GetAttribute("Emit"));
-		elseif (ParticleEmitter:IsA("Light")) then
-			ParticleEmitter.Enabled = true;
-		end
-	end
-
-	local CurrentIteration = self.FireIteration;
-	Thread.Delay(.15, function()
-		if (CurrentIteration ~= self.FireIteration) then CurrentIteration = nil; return; end;
-
-		for _, Light:Light in ipairs(self.Weapon.Handle:WaitForChild("Muzzle"):GetChildren()) do
-			if (Light:IsA("Light")) then
-				Light.Enabled = false;
+	if (Muzzle) then
+		for _, ParticleEmitter:ParticleEmitter|Light in ipairs(Muzzle:GetChildren()) do
+			if (ParticleEmitter:IsA("ParticleEmitter")) then
+				ParticleEmitter:Emit(ParticleEmitter:GetAttribute("Emit"));
+			elseif (ParticleEmitter:IsA("Light")) then
+				ParticleEmitter.Enabled = true;
 			end
 		end
 
-		CurrentIteration = nil;
-	end)
+		local CurrentIteration = self.FireIteration;
+		Thread.Delay(self.WeaponConfig.MuzzleFlashTime or .15, function()
+			if (CurrentIteration ~= self.FireIteration) then CurrentIteration = nil; return; end;
+
+			for _, Light:Light in ipairs(Muzzle:GetChildren()) do
+				if (Light:IsA("Light")) then
+					Light.Enabled = false;
+				end
+			end
+
+			CurrentIteration = nil;
+		end)
+	end
 
 	self.Springs.Recoil:shove(self.WeaponConfig.GetWeaponModelRecoil());
 	self:PlaySound("Fire");
 
-	local CameraShove = (self.WeaponConfig.GetCameraRecoil() * (self.Aiming and .35 or 1));
-	self.Springs.Camera:shove(CameraShove);
+	self.Recoil.RecoilClamp = self.WeaponConfig.RecoilClamp or 7;
+	self.Recoil.DecalSpeed = self.WeaponConfig.RecoilDecaySpeed or 5;
+	self.Recoil.RiseSpeed = self.WeaponConfig.RecoilRiseSpeed or 12;
+
+	-- self.Character.PrimaryPart:ApplyImpulse(-(self.FireDirection * Vector3.new(1, 0.05, 1)) * 120);
+
+	self.Recoil:Recoil((self.WeaponConfig.RecoilUp or 15) * (self.Aiming and .33 or 1), (self.WeaponConfig.HorizontalRandomRecoil or 5) * (self.Aiming and 0.33 or 1));
+
+	-- local CameraShove, Speed = self.WeaponConfig.GetCameraRecoil();
+	-- CameraShove *= (self.Aiming and .35 or 1);
+
+	-- self.Springs.Camera.Speed = Speed or 4;
+	-- self.Springs.Camera:shove(CameraShove);
 end
 
 local ActiveStates = {
 	[Enum.HumanoidStateType.Running] = true,
 	[Enum.HumanoidStateType.RunningNoPhysics] = true, 
 };
+
 function WeaponHandler:Footsteps()
 	self.FootstepFrame = not self.FootstepFrame and 1 or self.FootstepFrame + 1;
 

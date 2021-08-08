@@ -26,7 +26,7 @@ function InteractiveBeams:UpdateStream()
     table.clear(self.Streaming);
 
     for _, Object:Beam in ipairs(AllObjects) do
-        if ((Object.Attachment0.WorldPosition - Position).Magnitude <= self.StreamingRadius) then
+        if (Object.Attachment0 and (Object.Attachment0.WorldPosition - Position).Magnitude <= self.StreamingRadius) then
             self.Streaming[#self.Streaming+1] = Object;
         end
     end
@@ -46,7 +46,7 @@ function InteractiveBeams:Update()
         if (Raycast) then
             local PercentDistance = (Beam.Attachment0.WorldPosition - Raycast.Position).Magnitude / Distance;
 
-            Beam.Segments = 4;
+            Beam.Segments = 10;
 
             Beam.Transparency = NumberSequence.new({
                 NumberSequenceKeypoint.new(0, 0),
