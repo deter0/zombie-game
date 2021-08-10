@@ -25,7 +25,7 @@ function Wind:UpdateStream(CameraPosition)
     for index, TaggedPart:BasePart|Bone in next, self.AllParts do
         if (index % 300 == 0) then RunService.Heartbeat:Wait(); end;
         
-        if (TaggedPart:IsA("BasePart")) then
+        if (TaggedPart:IsA("BasePart") and TaggedPart:IsDescendantOf(workspace)) then
             TaggedPart.CanCollide = false;
             TaggedPart.Massless = true;
             TaggedPart.Anchored = true;
@@ -70,9 +70,9 @@ function Wind:Start()
 
     local Angles = CFrame.Angles;
 
-	RunService.Heartbeat:Connect(function(DeltaTime)
-        debug.profilebegin("Wind:UpdateStream");
+	if (true) then return; end;
 
+	RunService.Heartbeat:Connect(function(DeltaTime)
         CameraPosition = Camera.CFrame.Position;
 
         if ((LastCameraPosition - CameraPosition).Magnitude >= self.UpdateStreamDistance and (time() - LastUpdated) > .8) then
@@ -97,8 +97,6 @@ function Wind:Start()
 
             Part.CFrame = (self.Original[Part] * Angles(WindNoise2, WindNoise, -WindNoise * .4) * self.WindDirection);
         end
-
-        debug.profileend();
     end)
 end
 
