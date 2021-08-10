@@ -102,7 +102,7 @@ function WeaponHandler.new(FiringManager, ServerManager, env)
 
 		for SoundsName, Sounds in pairs(FootstepSounds.SoundIds) do
 			for _, Sound in ipairs(Sounds) do
-				local SoundInstance:Sound = AudioModule:GetInstanceFromId(Sound); -- * Audio module should cache this now 
+				local SoundInstance:Sound = AudioModule:GetInstanceFromId(Sound); -- * Audio module should cache this now
 				ToLoad[#ToLoad+1] = SoundInstance;
 			end
 		end
@@ -177,7 +177,7 @@ function WeaponHandler:SetCharacter(NewCharacter:Model)
 		table.unpack(CollectionService:GetTagged("NotCollidable")),
 		table.unpack(CollectionService:GetTagged("PlayerCharacter"))
 	};
-	
+
 	self.ActiveMaid.NonCollidableObjectAdded = CollectionService:GetInstanceAddedSignal("NotCollidable"):Connect(function()
 		self.ProximityParams.FilterDescendantsInstances = {
 			NewCharacter,
@@ -491,7 +491,7 @@ end
 
 function WeaponHandler:MenuToggled(MenuName:string, State:boolean)
 	self.OpenMenus = self.OpenMenus or {};
-	
+
 	if (not self.ActiveMaid.OpenMenus) then
 		self.ActiveMaid.OpenMenus = self.OpenMenus;
 	end
@@ -562,6 +562,15 @@ local function clamp(x:number)
 	return math.clamp(x, 0, .15);
 end
 
+local rad = math.rad;
+local function VectorToAngles(Vector:Vector3, ShouldConvertToRadians:boolean):CFrame.Angles
+	return CFrame.Angles(
+		ShouldConvertToRadians and rad(Vector.X) or Vector.X,
+		ShouldConvertToRadians and rad(Vector.Y) or Vector.Y,
+		ShouldConvertToRadians and rad(Vector.Z) or Vector.Z
+	);
+end
+
 function WeaponHandler:Update(DeltaTime:number)
 	-- debug.profilebegin("WeaponHandler:Update");
 	self.Tick += DeltaTime;
@@ -616,7 +625,7 @@ function WeaponHandler:Update(DeltaTime:number)
 	end
 
 	local AimRotation = self.Weapon.Offsets:FindFirstChild("AimRotation") and self.Weapon.Offsets.AimRotation.Value or EmptyVector;
-	local TargetAim = self.Aiming and CFrame.new(self.Weapon.Offsets.Aim.Value) * CFrame.Angles(AimRotation.X, AimRotation.Y, AimRotation.Z) or EmptyCFrame;
+	local TargetAim = self.Aiming and CFrame.new(self.Weapon.Offsets.Aim.Value) * VectorToAngles(AimRotation, false) or EmptyCFrame;
 
 	self.Weapon.Offsets.ViewmodelOffset.Aiming.Value =
 		self.Weapon.Offsets.ViewmodelOffset.Aiming.Value:Lerp(
@@ -673,7 +682,7 @@ function WeaponHandler:Update(DeltaTime:number)
 
 	MasterOffset *= self.RunningCFrame;
 
-	local BreathingCFrame = CFrame.new() * CFrame.Angles(math.sin(self.Tick)/60 * (self.Aiming and .15 or 1), math.sin(self.Tick)/25 * (self.Aiming and .15 or 1), math.sin(self.Tick)/55 * (self.Aiming and .15 or 1));
+	local BreathingCFrame = CFrame.new() * CFrame.Angles(math.sin(self.Tick)/60 * (self.Aiming and .01 or 1), math.sin(self.Tick)/25 * (self.Aiming and .01 or 1), math.sin(self.Tick)/55 * (self.Aiming and .01 or 1));
 	self.BreathingCFrame = not self.BreathingCFrame and BreathingCFrame or self.BreathingCFrame:Lerp(BreathingCFrame, DeltaTime * 5);
 	MasterOffset *= self.BreathingCFrame;
 
@@ -710,14 +719,12 @@ function WeaponHandler:Update(DeltaTime:number)
 	) * GunSwayInfluence * AimingInfluence;
 
 	self.CameraBobbingCFrame = self.CameraBobbingCFrame or EmptyCFrame;
-	self.CameraBobbingCFrame = self.CameraBobbingCFrame:Lerp(CFrame.Angles(0, 0, math.rad(GetBobbing(6+(self.Running and 1.3 or 0), .7, self.Speed)) * (self.Running and 2 or 1)), clamp(DeltaTime * 5));
+	self.CameraBobbingCFrame = self.CameraBobbingCFrame:Lerp(
+		CFrame.Angles(0, 0, math.rad(GetBobbing(6 + (self.Running and 1.3 or 0), .7, self.Speed)) * (self.Running and 2 or 1)), clamp(DeltaTime * 5)
+	);
 
 	local CameraOffset = self.Springs.Camera:update(DeltaTime);
-	CameraOffset = CFrame.Angles(
-		math.rad(CameraOffset.X),
-		math.rad(CameraOffset.Y),
-		math.rad(CameraOffset.Z)
-	) * self.CameraBobbingCFrame;
+	CameraOffset = VectorToAngles(CameraOffset, true) * self.CameraBobbingCFrame;
 
 	self.CameraOffset = self.CameraOffset or EmptyCFrame;
 
@@ -740,7 +747,7 @@ function WeaponHandler:Update(DeltaTime:number)
 	self.Crosshair.CFrame = CFrame.lookAt(Camera.CFrame.Position + self.FireDirection * 5, Camera.CFrame.Position);
 
 	self.Viewmodel.RootPart.CFrame = Camera.CFrame:ToWorldSpace(CFrame.new(RecoilOffset) * CFrame.new(ShoveOffset));
-	self.Viewmodel.RootPart.CFrame *= CFrame.Angles(0,-ShoveOffset.X, ShoveOffset.Y);
+	self.Viewmodel.RootPart.CFrame *= CFrame.Angles(0, -ShoveOffset.X, ShoveOffset.Y);
 
 	self.Viewmodel.RootPart.CFrame *= MasterOffset * self.Sway;
 
@@ -751,10 +758,6 @@ function WeaponHandler:Update(DeltaTime:number)
 
 	AimingInfluence = nil;
 	GunSwayInfluence = nil;
-
-	-- pcall(function()
-		-- debug.profileend();
-	-- end)
 end
 
 function WeaponHandler:Fire()
@@ -792,7 +795,7 @@ function WeaponHandler:Fire()
 		end
 
 		local CurrentIteration = self.FireIteration;
-		Thread.Delay(self.WeaponConfig.MuzzleFlashTime or .15, function()
+		task.delay(self.WeaponConfig.MuzzleFlashTime or .15, function()
 			if (CurrentIteration ~= self.FireIteration) then CurrentIteration = nil; return; end;
 
 			for _, Light:Light in ipairs(Muzzle:GetChildren()) do
@@ -812,20 +815,12 @@ function WeaponHandler:Fire()
 	self.Recoil.DecalSpeed = self.WeaponConfig.RecoilDecaySpeed or 5;
 	self.Recoil.RiseSpeed = self.WeaponConfig.RecoilRiseSpeed or 12;
 
-	-- self.Character.PrimaryPart:ApplyImpulse(-(self.FireDirection * Vector3.new(1, 0.05, 1)) * 120);
-
 	self.Recoil:Recoil((self.WeaponConfig.RecoilUp or 15) * (self.Aiming and .33 or 1), (self.WeaponConfig.HorizontalRandomRecoil or 5) * (self.Aiming and 0.33 or 1));
-
-	-- local CameraShove, Speed = self.WeaponConfig.GetCameraRecoil();
-	-- CameraShove *= (self.Aiming and .35 or 1);
-
-	-- self.Springs.Camera.Speed = Speed or 4;
-	-- self.Springs.Camera:shove(CameraShove);
 end
 
 local ActiveStates = {
 	[Enum.HumanoidStateType.Running] = true,
-	[Enum.HumanoidStateType.RunningNoPhysics] = true, 
+	[Enum.HumanoidStateType.RunningNoPhysics] = true,
 };
 
 function WeaponHandler:Footsteps()

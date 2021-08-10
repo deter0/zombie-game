@@ -22,7 +22,12 @@ return function(Cast, RaycastResult:RaycastResult, SegmentVelocity)
 
 		if (Size >= 25) then return false; end;
 
-		local OpposingRaycast = workspace:Raycast(RaycastResult.Position + (Direction * Size * 2), -(Direction * Size * 2));
+		local ThisRaycastParams = RaycastParams.new();
+		ThisRaycastParams.FilterType = Enum.RaycastFilterType.Whitelist;
+		ThisRaycastParams.FilterDescendantsInstances = {RaycastResult.Instance};
+		ThisRaycastParams.IgnoreWater = true;
+
+		local OpposingRaycast = workspace:Raycast(RaycastResult.Position + (Direction * Size * 2), -(Direction * Size * 2), ThisRaycastParams);
 
 		if (OpposingRaycast) then
 			local RayCoverage = (RaycastResult.Position - OpposingRaycast.Position).Magnitude * (MaterialEffectors[OpposingRaycast.Material] or 1);

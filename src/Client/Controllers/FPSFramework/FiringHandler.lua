@@ -14,6 +14,7 @@ local BulletImpacts = require(script.Parent:WaitForChild("BulletImpacts"));
 BulletImpacts:Start();
 
 local Hitmarker = require(Shared:WaitForChild("Hitmarker"));
+Hitmarker:Start();
 
 local CollectionService = game:GetService("CollectionService");
 
@@ -81,7 +82,7 @@ function FiringHandler:CanRayPierce(Cast, RaycastResult:RaycastResult, ...) -- T
 				);
 				
 				if (Damage) then
-					Hitmarker:Hit(RaycastResult.Position, Damage);
+					Hitmarker:Hit(RaycastResult.Position, Damage, Humanoid.Parent);
 
 					if (Humanoid.Health <= 0 and not Humanoid:GetAttribute("Dead")) then
 						Humanoid:SetAttribute("Dead", true);
