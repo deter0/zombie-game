@@ -671,7 +671,7 @@ function WeaponHandler:Update(DeltaTime:number)
 		MasterOffset *= self.ProximityPushbackOffset;
 	end
 
-	UserInputService.MouseDeltaSensitivity = self.Aiming and .8 or 1;
+	UserInputService.MouseDeltaSensitivity = self.Aiming and 0.69 or 1; --TODO(deter): Make this in settings.
 	self.Humanoid.WalkSpeed = self.Aiming and 12 or 16;
 
 	self.RunningCFrame = self.RunningCFrame or EmptyCFrame;
@@ -682,7 +682,7 @@ function WeaponHandler:Update(DeltaTime:number)
 
 	MasterOffset *= self.RunningCFrame;
 
-	local BreathingCFrame = CFrame.new() * CFrame.Angles(math.sin(self.Tick)/60 * (self.Aiming and .01 or 1), math.sin(self.Tick)/25 * (self.Aiming and .01 or 1), math.sin(self.Tick)/55 * (self.Aiming and .01 or 1));
+	local BreathingCFrame = CFrame.Angles(math.sin(self.Tick)/60 * (self.Aiming and .01 or 1), math.sin(self.Tick)/25 * (self.Aiming and .01 or 1), math.sin(self.Tick)/55 * (self.Aiming and .01 or 1));
 	self.BreathingCFrame = not self.BreathingCFrame and BreathingCFrame or self.BreathingCFrame:Lerp(BreathingCFrame, DeltaTime * 5);
 	MasterOffset *= self.BreathingCFrame;
 
@@ -698,7 +698,7 @@ function WeaponHandler:Update(DeltaTime:number)
 	local MouseDelta = UserInputService:GetMouseDelta();
 
 	self.Springs.Sway.Mass = self.WeaponConfig.Mass or 5;
-	self.Springs.Sway:shove(Vector3.new(MouseDelta.X / 200, MouseDelta.Y / 200) * (self.WeaponConfig.WeaponLightness or 1) * (self.Aiming and .5 or 1));
+	self.Springs.Sway:shove(Vector3.new(MouseDelta.X / 200, MouseDelta.Y / 200) * (self.WeaponConfig.WeaponLightness or 1) * (self.Aiming and .33 or 1));
 
 	if (self.LoadedAnimations.Running) then
 		if (self.Running) then
@@ -713,8 +713,8 @@ function WeaponHandler:Update(DeltaTime:number)
 
 	local computed1, computed2 = self.Speed * (self.Running and 1.2 or 1), DeltaTime * (self.Running and 1.6 or 1);
 	local MovementSway = Vector3.new(
-		(GetBobbing(4, 15, computed1) * computed2),
-		(GetBobbing(8, 15/2, computed1) * -1) * computed2,
+		(GetBobbing(7, 8, computed1) * computed2),
+		(GetBobbing(12, 8/2, computed1) * -1) * computed2,
 		0
 	) * GunSwayInfluence * AimingInfluence;
 
