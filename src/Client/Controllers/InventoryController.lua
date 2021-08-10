@@ -60,8 +60,8 @@ function InventoryController:Start()
 	end, false, Enum.KeyCode.E);
 end
 
-local function Intersecting(x, y, p, s)
-	return ((x >= (p.X - s.X/2) and x <= (p.X + (s.X/2))) and (y >= (p.Y - s.Y/2) and y <= (p.Y + s.Y/2)));
+local function Intersecting(xPosition, yPosition, collidorPosition, colliderSize)
+	return ((xPosition >= (collidorPosition.X - colliderSize.X/2) and xPosition <= (collidorPosition.X + (colliderSize.X/2))) and (yPosition >= (collidorPosition.Y - colliderSize.Y/2) and yPosition <= (collidorPosition.Y + colliderSize.Y/2)));
 end
 
 function InventoryController:GetHoveringSlot(DragOffset:Vector2)
