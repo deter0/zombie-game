@@ -4,100 +4,119 @@
 
 local RunService = game:GetService("RunService");
 local CollectionService = game:GetService("CollectionService");
+
 local Camera = workspace.CurrentCamera or workspace:WaitForChild("Camera");
 local Tag = "WindShake";
 
+local StreamingModule;
+do
+	local PlayerService = game:GetService("Players");
+	local Player = PlayerService.LocalPlayer;
+	StreamingModule = require(Player:WaitForChild("PlayerScripts"):WaitForChild("StreamHandler"):WaitForChild("StreamingModule"));
+end
+
 local Wind = {
-    Range = 90,
-    Noises = {},
-    Original = {},
-    WindSpeed = 4,
-    WindStrength = .15,
-    UpdateStreamDistance = 50,
-    WindDirection = CFrame.Angles(0, 0, 0),
-    Streaming = {},
-    NoiseLayers = 12
+	Range = 140,
+	Noises = {},
+	Original = setmetatable({}, {__mode = "kv"}),
+	WindSpeed = 2,
+	WindStrength = .08,
+	UpdateStreamDistance = 50,
+	WindDirection = CFrame.Angles(0, 0, 0),
+	Streaming = {},
+	NoiseLayers = 12
 };
 
 function Wind:UpdateStream(CameraPosition)
-    self.Streaming = {};
-    
-    for index, TaggedPart:BasePart|Bone in next, self.AllParts do
-        if (index % 300 == 0) then RunService.Heartbeat:Wait(); end;
-        
-        if (TaggedPart:IsA("BasePart") and TaggedPart:IsDescendantOf(workspace)) then
-            TaggedPart.CanCollide = false;
-            TaggedPart.Massless = true;
-            TaggedPart.Anchored = true;
-            
-            local Distance = (CameraPosition - (TaggedPart.Position)).Magnitude;
-            
-            if (Distance <= self.Range) then
-                self.Streaming[#self.Streaming + 1] = TaggedPart;
-            elseif (self.Original[TaggedPart]) then
-                TaggedPart.CFrame = self.Original[TaggedPart];
-                self.Original[TaggedPart] = nil;
-            end
-        end
-    end
+	self.Streaming = self.Profile:GetObjectsAroundPosition(CameraPosition, self.Range);
+
+	-- for _, TaggedPart:BasePart|Bone in next, self.AllParts do
+	-- 	if (TaggedPart:IsA("BasePart") and TaggedPart:IsDescendantOf(workspace)) then -- * Is decendant of workspace to ensure that it is not being offloaded by streaming module
+	-- 		TaggedPart.CanCollide = false;
+	-- 		TaggedPart.Massless = true;
+	-- 		TaggedPart.Anchored = true;
+
+	-- 		local Distance = (CameraPosition - (TaggedPart.Position)).Magnitude;
+
+	-- 		if (Distance <= self.Range) then
+	-- 			self.Streaming[#self.Streaming + 1] = TaggedPart;
+	-- 		elseif (self.Original[TaggedPart]) then
+	-- 			TaggedPart.CFrame = self.Original[TaggedPart];
+	-- 			self.Original[TaggedPart] = nil;
+	-- 		end
+	-- 	end
+	-- end
 end
 
 local noise = math.noise;
 function Wind:GetNoise(now, Variation)
-    return noise(
-        (now * self.WindSpeed)*.2,
-        Variation * 10
-    ) * self.WindStrength;
+	return noise(
+		(now * self.WindSpeed)*.2,
+		Variation * 10
+	) * self.WindStrength;
 end
 
 function Wind:Start()
-    local LastCameraPosition = Vector3.new(1e7, 1e7, 1e7);
-    local LastUpdated = -math.huge;
+	if (not game:IsLoaded()) then game.Loaded:Wait(); end;
 
-    self.AllParts = CollectionService:GetTagged(Tag);
+	local LastCameraPosition = Vector3.new(1e7, 1e7, 1e7);
+	local LastUpdated = -math.huge;
 
-    CollectionService:GetInstanceAddedSignal(Tag):Connect(function(Instance)
-        self.AllParts[#self.AllParts+1] = Instance;
-    end)
-    CollectionService:GetInstanceRemovedSignal(Tag):Connect(function(Instance) self.Original[Instance] = nil; end);
+	self.Noises = {};
 
-    if (not game:IsLoaded()) then game.Loaded:Wait(); end;
+	local Angles = CFrame.Angles;
 
-    local CameraPosition = Camera.CFrame.Position;
-    self:UpdateStream(CameraPosition);
+	self.Profile = StreamingModule.Classes.Profile.new({
+		Name = "Wind",
+		Config = {
+			ChunkSize = 40,
+			StreamingDistance = self.Range,
+			Pack = false,
+		},
+		CollectionServiceTag = Tag,
+		DebugMode = false,
+		Paused = true,
+	});
 
-    self.Noises = {};
+	local CameraPosition = Camera.CFrame.Position;
+	self:UpdateStream(CameraPosition);
 
-    local Angles = CFrame.Angles;
+	RunService.Heartbeat:Connect(function()
+		CameraPosition = Camera.CFrame.Position;
 
-	if (true) then return; end;
+		if ((LastCameraPosition - CameraPosition).Magnitude >= self.UpdateStreamDistance and (time() - LastUpdated) > .8) then
+			self:UpdateStream(CameraPosition);
+			LastCameraPosition = CameraPosition;
+			LastUpdated = time();
+		end
 
-	RunService.Heartbeat:Connect(function(DeltaTime)
-        CameraPosition = Camera.CFrame.Position;
+		local now = time();
 
-        if ((LastCameraPosition - CameraPosition).Magnitude >= self.UpdateStreamDistance and (time() - LastUpdated) > .8) then
-            self:UpdateStream(CameraPosition);
-            LastCameraPosition = CameraPosition;
-            LastUpdated = time();
-        end
+		for i = 1, self.NoiseLayers do
+			self.Noises[i] = self:GetNoise(now, i);
+		end
 
-        local now = time();
+		local PartList = self.Streaming;
+		if (#PartList < 1) then return; end;
 
-        for i = 1, self.NoiseLayers do
-            self.Noises[i] = self:GetNoise(now, i);
-        end
-    
-        for index, Part in next, self.Streaming do
-            local WindNoise = self.Noises[(index % self.NoiseLayers) + 1];
-            local WindNoise2 = self.Noises[((index - 1) % self.NoiseLayers) + 1];
+		local CFrameList = table.create(#PartList);
 
-            if (not self.Original[Part]) then
-                self.Original[Part] = Part.CFrame;
-            end
+		debug.profilebegin("Wind update");
+		for index, Part in ipairs(PartList) do
+			local WindNoise = self.Noises[(index % self.NoiseLayers) + 1];
+			local WindNoise2 = self.Noises[((index - 1) % self.NoiseLayers) + 1];
 
-            Part.CFrame = (self.Original[Part] * Angles(WindNoise2, WindNoise, -WindNoise * .4) * self.WindDirection);
-        end
-    end)
+			if (not self.Original[Part]) then
+				self.Original[Part] = Part.CFrame;
+			end
+
+			CFrameList[index] = (self.Original[Part] * Angles(WindNoise2, WindNoise, -WindNoise * .4) * self.WindDirection);
+		end
+
+		workspace:BulkMoveTo(PartList, CFrameList, Enum.BulkMoveMode.FireCFrameChanged);
+
+		debug.profileend();
+	end)
 end
 
 return Wind
