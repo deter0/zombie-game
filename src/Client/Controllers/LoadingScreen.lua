@@ -143,13 +143,16 @@ function LoadingScreen:Start()
 
 	self:SetLoadingState("Loading loading screen");
 
-	task.wait(4);
-	self.LoadingAnimation = require(Shared:WaitForChild("Animations"):WaitForChild("Logo"));
-	local GifPlayer = self.Controllers.ImageSequencePlayer:Play(self.GifPlayer, .04, self.LoadingAnimation, {[1] = 1.5, [#self.LoadingAnimation] = 5});
+	local GifPlayer;
+	if (not RunService:IsStudio()) then
+		task.wait(4);
+		self.LoadingAnimation = require(Shared:WaitForChild("Animations"):WaitForChild("Logo"));
+		GifPlayer = self.Controllers.ImageSequencePlayer:Play(self.GifPlayer, .04, self.LoadingAnimation, {[1] = 1.5, [#self.LoadingAnimation] = 5});
 
-	self:SetLoadingState("Loading loading screen gif");
+		self:SetLoadingState("Loading loading screen gif");
 
-	GifPlayer.Loaded:Wait();
+		GifPlayer.Loaded:Wait();
+	end
 
 	self:SetLoadingState("Presenting logos");
 
@@ -162,27 +165,29 @@ function LoadingScreen:Start()
 	if (not self.Controllers.FPSFramework.IsLoaded) then
 		self.Controllers.FPSFramework.Loaded:Wait();
 	end
-	
+
 	self:SetLoadingState("Loading materials");
-	
+
 	local ContentProvider = game:GetService("ContentProvider");
-	
+
 	local ToLoad = {};
-	
+
 	for _, ToLoadInstance:Instance in ipairs(ReplicatedStorage:WaitForChild("ToLoad"):GetChildren()) do
 		ToLoad[#ToLoad + 1] = ToLoadInstance;
 	end
-	
+
 	ContentProvider:PreloadAsync(ToLoad);
-	
+
 	self:SetLoadingState("Finalizing");
-	
+
 	if (not RunService:IsStudio()) then
 		task.wait(4);
 	end
-	
+
 	self:SetLoadingState(nil);
-	GifPlayer:Stop();
+	if (GifPlayer) then
+		GifPlayer:Stop();
+	end
 	self.LoadingScreenGui:Destroy();
 	self.Controllers.Fade:In(1.5);
 	self.Finished = true;
