@@ -7,36 +7,41 @@ local CollectionService = game:GetService("CollectionService");
 local TreeCollisionBoxGenerator = {};
 
 function TreeCollisionBoxGenerator:GenerateCollisionBox(TreeModel:Model)
-    local TreeTrunk = TreeModel:WaitForChild("Trunk", 6);
+	local TreeTrunk = TreeModel:WaitForChild("Trunk", 6);
 
-    if (TreeTrunk) then
-        local XZMagnitude = math.sqrt(TreeTrunk.Size.X^2 + TreeTrunk.Size.Z^2)/14;
-        local YSize = TreeTrunk.Size.Y;
+	if (TreeTrunk) then
+		local XZMagnitude = math.sqrt(TreeTrunk.Size.X^2 + TreeTrunk.Size.Z^2)/14;
+		local YSize = TreeTrunk.Size.Y;
 
-        local CollisionBoxSize = Vector3.new(XZMagnitude, YSize, XZMagnitude);
+		local CollisionBox = Instance.new("Part");
+		CollisionBox.CFrame = TreeTrunk.CFrame;
 
-        local CollisionBox = Instance.new("Part");
-        CollisionBox.Size = CollisionBoxSize;
-        CollisionBox.CFrame = TreeTrunk.CFrame;
+		CollisionBox.Transparency = 1;
+		CollisionBox.Anchored = true;
+		CollisionBox.CanTouch = false;
 
-        CollisionBox.Transparency = 1;
-        CollisionBox.Anchored = true;
+		CollisionBox.Shape = Enum.PartType.Cylinder;
+		CollisionBox.Rotation += Vector3.new(0, 0, 90);
 
-        CollisionBox.Parent = workspace:WaitForChild("TreeCollidors");
+		local CollisionBoxSize = Vector3.new(YSize, XZMagnitude, XZMagnitude);
+		CollisionBox.Size = CollisionBoxSize;
 
-        TreeTrunk.CanCollide = false;
-    end
+		CollisionBox.Parent = workspace:WaitForChild("TreeCollidors");
+
+		TreeTrunk.CanCollide = false;
+		TreeTrunk.CanTouch = false;
+	end
 end
 
 function TreeCollisionBoxGenerator:Start()
 	for _, Tree in ipairs(CollectionService:GetTagged("Tree")) do
-        self:GenerateCollisionBox(Tree);
-    end
-    CollectionService:GetInstanceAddedSignal("Tree"):Connect(function(Tree)
+		self:GenerateCollisionBox(Tree);
+	end
+	CollectionService:GetInstanceAddedSignal("Tree"):Connect(function(Tree)
 		task.spawn(function()
 			self:GenerateCollisionBox(Tree);
 		end)
-    end)
+	end)
 end
 
 return TreeCollisionBoxGenerator;
