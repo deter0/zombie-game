@@ -6,9 +6,9 @@ local CollectionService = game:GetService("CollectionService");
 
 local TreeCollisionBoxGenerator = {};
 
-function TreeCollisionBoxGenerator:GenerateCollisionBox(TreeModel:Model)   
-    local TreeTrunk = TreeModel:WaitForChild("Trunk");
-    
+function TreeCollisionBoxGenerator:GenerateCollisionBox(TreeModel:Model)
+    local TreeTrunk = TreeModel:WaitForChild("Trunk", 6);
+
     if (TreeTrunk) then
         local XZMagnitude = math.sqrt(TreeTrunk.Size.X^2 + TreeTrunk.Size.Z^2)/14;
         local YSize = TreeTrunk.Size.Y;
@@ -23,7 +23,7 @@ function TreeCollisionBoxGenerator:GenerateCollisionBox(TreeModel:Model)
         CollisionBox.Anchored = true;
 
         CollisionBox.Parent = workspace:WaitForChild("TreeCollidors");
-        
+
         TreeTrunk.CanCollide = false;
     end
 end
@@ -33,7 +33,9 @@ function TreeCollisionBoxGenerator:Start()
         self:GenerateCollisionBox(Tree);
     end
     CollectionService:GetInstanceAddedSignal("Tree"):Connect(function(Tree)
-        self:GenerateCollisionBox(Tree);
+		task.spawn(function()
+			self:GenerateCollisionBox(Tree);
+		end)
     end)
 end
 

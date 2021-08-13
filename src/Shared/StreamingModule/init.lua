@@ -1,7 +1,11 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage");
 local CollectionService = game:GetService("CollectionService");
 
-local ParentDirectory = ReplicatedStorage:FindFirstChild("Chunks") or Instance.new("Folder");
+if (ReplicatedStorage:FindFirstChild("Chunks")) then
+	ReplicatedStorage.Chunks:Destroy();
+end
+
+local ParentDirectory = Instance.new("Folder");
 ParentDirectory.Name = "Chunks";
 ParentDirectory.Parent = ReplicatedStorage;
 
@@ -16,7 +20,7 @@ do
 		Chunks = {},
 		Config = {
 			ChunkSize = 45,
-			StreamDistance = 100
+			StreamingDistance = 45
 		},
 	};
 	Profile.__index = Profile;
@@ -169,13 +173,13 @@ local Streaming = {
 	AllProfiles = {},
 };
 
-function Streaming:CreateProfile(ProfileName:string, ProfileConfig, Objects:{Instances}?, CollectionServiceTag:string?, DebugMode:boolean?)
+function Streaming:CreateProfile(ProfileName:string, ProfileConfig, Objects:{Instance}?, CollectionServiceTag:string?, DebugMode:boolean?)
 	local Profile = Classes.Profile.new({
 		Name = ProfileName or "Profile",
 		InitialObjects = Objects or {},
 		CollectionServiceTag = CollectionServiceTag,
 		Id = #self.AllProfiles + 1,
-		Config = ProfileConfig and setmetatable(ProfileConfig, {__index = Classes.Profile.Config}),
+		Config = ProfileConfig and setmetatable(ProfileConfig, {__index = Classes.Profile.Config}) or Classes.Profile.Config,
 		DebugMode = DebugMode,
 	});
 
@@ -183,23 +187,52 @@ function Streaming:CreateProfile(ProfileName:string, ProfileConfig, Objects:{Ins
 end
 
 --- Starts streaming all profiles in the same thread please note that this access to the player's camera
-function Streaming:StartStreamingAllSimultanously() -- * Only run locally
+function Streaming:StartStreamingAllSimultanously(IsPlugin:boolean?)
 	local Camera = workspace.CurrentCamera or workspace:WaitForChild("Camera");
 
 	local UpdatePosition;
 	local LastUpdate = 0;
 
+	local RunService = game:GetService("RunService");
+
 	while task.wait() do -- ? Similar to heartbeat?
+		if (IsPlugin and RunService:IsRunning()) then continue; end;
+
 		local CameraPosition:Vector3 = Camera.CFrame.Position;
 
 		if ((tick() - LastUpdate) > 0.45) then
 			if (not UpdatePosition or (CameraPosition - UpdatePosition).Magnitude >= 25) then
 				for _, Profile in ipairs(self.AllProfiles) do
+					if (Profile.Paused) then continue; end;
+
 					Profile:UpdateStream(CameraPosition);
 				end
 				UpdatePosition = CameraPosition;
 				LastUpdate = tick();
 			end
+		end
+	end
+end
+
+function Streaming:PauseAll()
+	for _, v in ipairs(self.AllProfiles) do
+		v.Paused = true;
+		for _, Chunk in pairs(v.Chunks) do
+			Chunk:Reload();
+		end
+	end
+end
+
+function Streaming:ResumeAll()
+	for _, v in ipairs(self.AllProfiles) do
+		v.Paused = false;
+	end
+end
+
+function Streaming:Revert()
+	for _, v in ipairs(self.AllProfiles) do
+		for _, Chunk in pairs(v.Chunks) do
+			Chunk:RevertOffload();
 		end
 	end
 end

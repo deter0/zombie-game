@@ -682,7 +682,7 @@ function WeaponHandler:Update(DeltaTime:number)
 
 	MasterOffset *= self.RunningCFrame;
 
-	local BreathingCFrame = CFrame.Angles(math.sin(self.Tick)/60 * (self.Aiming and .01 or 1), math.sin(self.Tick)/25 * (self.Aiming and .01 or 1), math.sin(self.Tick)/55 * (self.Aiming and .01 or 1));
+	local BreathingCFrame = CFrame.Angles(math.sin(self.Tick)/60 * (self.Aiming and .01 or 0.25), math.sin(self.Tick)/25 * (self.Aiming and .01 or 0.25), math.sin(self.Tick)/55 * (self.Aiming and .01 or 0.25));
 	self.BreathingCFrame = not self.BreathingCFrame and BreathingCFrame or self.BreathingCFrame:Lerp(BreathingCFrame, DeltaTime * 5);
 	MasterOffset *= self.BreathingCFrame;
 

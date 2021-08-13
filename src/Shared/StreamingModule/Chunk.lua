@@ -18,6 +18,7 @@ function Chunk.new(Position:Vector3, ChunkSize:Vector3, ProfileDirectory:Folder|
 
 	if (self.Pack) then
 		self.Pack = Instance.new("Model");
+		self.Pack.Name = tostring(self.Position);
 		self.Pack.Parent = workspace;
 	end
 
@@ -27,15 +28,25 @@ end
 function Chunk:AppendObject(Object:Instance)
 	if (not Object:IsDescendantOf(workspace)) then return; end;
 
+	local ParentString = "";
+	local Parent = Object.Parent;
+	while Parent ~= game do
+		ParentString = Parent.Name.."/"..ParentString;
+		Parent = Parent.Parent;
+	end
+	Object:SetAttribute("OriginalParent", ParentString);
+
 	self.Children[#self.Children + 1] = Object;
+	self.ParentData[Object] = Object.Parent;
 	if (self.Pack) then
-		repeat task.wait();
-			pcall(function()
+		Object.Parent = self.Pack;
+
+		if (Object.Parent ~= self.Pack) then
+			repeat task.wait();
+				print("Waiting");
 				Object.Parent = self.Pack;
-			end)
-		until Object.Parent == self.Pack;
-	else
-		self.ParentData[Object] = Object.Parent;
+			until Object.Parent == self.Pack;
+		end
 	end
 
 	self:UpdateVisualization();
@@ -58,8 +69,10 @@ function Chunk:UpdateVisualization()
 end
 
 function Chunk:Offload()
+	if (self.State == -2) then
+		for _, v in ipairs(self.Children) do v.Parent = self.Pack; end;
+	end
 	if (self.State == -1) then return; end; -- * Return because its already offloaded
-
 	if (self.Pack) then
 		self.Pack.Parent = self.ProfileDirectory;
 	else
@@ -71,9 +84,20 @@ function Chunk:Offload()
 	self.State = -1; -- * Meaning offloaded
 end
 
-function Chunk:Reload()
-	if (self.State == 1) then return; end; -- * Return because it's already loaded
+function Chunk:RevertOffload()
+	if (self.State == -2) then return; end;
+	for index, Object:Instance in ipairs(self.Children) do
+		Object.Parent = self.ProfileDirectory;
+	end
 
+	self.State = -2;
+end
+
+function Chunk:Reload()
+	if (self.State == -2) then
+		for _, v in ipairs(self.Children) do v.Parent = self.Pack; end;
+	end
+	if (self.State == 1) then return; end; -- * Return because it's already loaded
 	if (self.Pack) then
 		self.Pack.Parent = workspace;
 	else

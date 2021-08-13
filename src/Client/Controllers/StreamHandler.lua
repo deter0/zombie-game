@@ -14,7 +14,8 @@ function StreamHandler:Start()
 	local Streams = require(game:GetService("ReplicatedStorage"):WaitForChild("Streams"));
 
 	for _, Stream in ipairs(Streams) do
-		StreamingModule:CreateProfile(Stream.Name, Stream.Config, {}, Stream.Tag);
+		print("created stream", Stream.Name, Stream.Config);
+		StreamingModule:CreateProfile(Stream.Name, Stream.Config, {}, Stream.Tag, Stream.VisualizeChunks);
 	end
 
 	StreamingModule:StartStreamingAllSimultanously();

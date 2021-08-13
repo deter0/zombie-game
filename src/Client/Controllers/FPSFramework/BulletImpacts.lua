@@ -82,14 +82,10 @@ function BulletImpacts:Impacted(Position:Vector3, Normal:Vector3, Material:Enum.
 	end
 
 	Attachment.Parent = ImpactPart;
-
-	-- self:BulletSparks(Position, Normal);
 end
 
 function BulletImpacts:BulletHole(Position:Vector3, Normal:Vector3, Part:BasePart)
 	local BulletHole = GetBulletHole();
-	BulletHole:FindFirstChildWhichIsA("WeldConstraint").Part0 = Part;
-	BulletHole.Anchored = Part.Anchored;
 	BulletHole.CFrame = CFrame.lookAt(Position, Position + Normal) * CFrame.new(0, 0, -0.01);
 end
 
@@ -157,10 +153,10 @@ end
 function BulletImpacts:OnRayPierced(cast, raycastResult, segmentVelocity, cosmeticBulletObject)
 	local position = raycastResult.Position
 	local normal = raycastResult.Normal
-	
+
 	local newNormal = Reflect(normal, segmentVelocity.Unit)
 	cast:SetVelocity(newNormal * segmentVelocity.Magnitude)
-	
+
 	-- It's super important that we set the cast's position to the ray hit position. Remember: When a pierce is successful, it increments the ray forward by one increment.
 	-- If we don't do this, it'll actually start the bounce effect one segment *after* it continues through the object, which for thin walls, can cause the bullet to almost get stuck in the wall.
 	cast:SetPosition(position)

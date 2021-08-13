@@ -12,9 +12,8 @@ return function(Cast, RaycastResult:RaycastResult, SegmentVelocity)
 
 	local Hits = Cast.UserData.Hits;
 
-	if (Hits > 5) then return false; end; -- Throttle
+	if (Hits > 5) then return false; end;
 
-	local RaycastOrigin = Cast.UserData.RayOrigin;
 	local Direction = Cast.UserData.Direction;
 
 	if (RaycastResult.Instance:IsA("BasePart")) then

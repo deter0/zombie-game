@@ -130,14 +130,14 @@ function InventoryManager:GetMockPlayerData()
 			Slot.Item = {
 				Icon = "rbxassetid://267895468",
 				Class = "Ammo",
-				Quantity = math.random(1, 10);
 			};
+			Slot.Quantity = math.random(1, 10);
 		elseif (Chance == 2) then
 			Slot.Item = {
 				Icon = "rbxassetid://6840728426",
 				Class = "Rock",
-				Quantity = math.random(1, 10);
 			};
+			Slot.Quantity = math.random(1, 10);
 		end
 
 		MockData.Inventory[index] = Slot;
