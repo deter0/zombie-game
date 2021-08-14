@@ -1,8 +1,7 @@
--- Wind
+-- Recoil
 -- Deter
 -- August 2, 2021
 
-local Camera = workspace.CurrentCamera or workspace:WaitForChild("Camera");
 local Recoil = {
 	CurrentRecoil = Vector3.new(),
 	TargetRecoil = Vector3.new(),
