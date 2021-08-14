@@ -18,7 +18,7 @@ end
 local Wind = {
 	Range = 140,
 	Noises = {},
-	Original = setmetatable({}, {__mode = "kv"}),
+	Original = {},
 	WindSpeed = 2,
 	WindStrength = .08,
 	UpdateStreamDistance = 50,
@@ -27,8 +27,26 @@ local Wind = {
 	NoiseLayers = 12
 };
 
+local function Find(b, v)
+	for _, value in next, b do
+		if (value == v) then
+			return true;
+		end
+	end
+
+	return false;
+end
+
 function Wind:UpdateStream(CameraPosition)
-	self.Streaming = self.Profile:GetObjectsAroundPosition(CameraPosition, self.Range);
+	local Streaming = self.Profile:GetObjectsAroundPosition(CameraPosition, self.Range);
+	for _, v in ipairs(self.Streaming) do
+		if (not Find(Streaming, v)) then
+			v.CFrame = self.Original[v] or v.CFrame;
+			self.Original[v] = nil;
+		end
+	end
+
+	self.Streaming = Streaming;
 
 	-- for _, TaggedPart:BasePart|Bone in next, self.AllParts do
 	-- 	if (TaggedPart:IsA("BasePart") and TaggedPart:IsDescendantOf(workspace)) then -- * Is decendant of workspace to ensure that it is not being offloaded by streaming module
