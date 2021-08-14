@@ -19,18 +19,18 @@ function FiringHandler:GetBullets(Player:Player)
 	local PlayerDirectory = Base64:Encode(tostring(Player.UserId));
 	local PlayerBulletDirectory = BulletsDirectory:FindFirstChild(PlayerDirectory);
 
-	
+
 	if (not PlayerBulletDirectory) then
 		PlayerBulletDirectory = Instance.new("Model");
 		PlayerBulletDirectory.Name = PlayerDirectory;
 		PlayerBulletDirectory.Parent = BulletsDirectory;
 	end
-	
+
 	PlayerBulletDirectory.Parent = BulletsDirectory;
 	CollectionService:AddTag(PlayerBulletDirectory, "PlayerBulletDirectory");
-	
+
 	local NumOfBullets = #PlayerBulletDirectory:GetChildren();
-	
+
 	local BulletsToHandle = self.BulletsPerPlayer - NumOfBullets;
 	if (BulletsToHandle > 0) then
 		for ind = 1, BulletsToHandle do
@@ -39,7 +39,7 @@ function FiringHandler:GetBullets(Player:Player)
 			table.insert(self.AllBullets, {Bullet, Player});
 			CollectionService:AddTag(Bullet, "Bullet");
 			Bullet.Parent = PlayerBulletDirectory;
-			
+
 			if (ind % 60 == 0) then
 				wait(.1); -- Cool down
 			end
@@ -50,7 +50,7 @@ function FiringHandler:GetBullets(Player:Player)
 			Bullets[#Bullets]:Destroy();
 		end
 	end
-	
+
 	return PlayerBulletDirectory;
 end
 
@@ -72,7 +72,7 @@ function FiringHandler:CreateBullet() -- ?
 		Bullet.Position = VERY_FAR;
 		Bullet.CanCollide = false;
 	end
-	
+
 	Bullet.RootPriority = 127;
 	CollectionService:AddTag(Bullet, "Bullet");
 
@@ -108,7 +108,10 @@ function FiringHandler:Start()
 	PlayerService.PlayerRemoving:Connect(coroutine.wrap(function(Player)
 		local PlayerDirectory = Base64:Encode(tostring(Player.UserId));
 		local PlayerBulletDirectory = workspace:WaitForChild("Bullets"):FindFirstChild(PlayerDirectory);
-		PlayerBulletDirectory:Destroy();
+
+		if (PlayerBulletDirectory) then
+			PlayerBulletDirectory:Destroy();
+		end
 	end));
 
 	return;
