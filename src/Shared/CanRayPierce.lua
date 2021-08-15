@@ -26,10 +26,13 @@ return function(Cast, RaycastResult:RaycastResult, SegmentVelocity)
 		ThisRaycastParams.FilterDescendantsInstances = {RaycastResult.Instance};
 		ThisRaycastParams.IgnoreWater = true;
 
-		local OpposingRaycast = workspace:Raycast(RaycastResult.Position + (Direction * Size * 2), -(Direction * Size * 2), ThisRaycastParams);
+		local OpposingRaycast = workspace:Raycast(RaycastResult.Position + (Direction * Size * 1.2), -(Direction * Size * 2), ThisRaycastParams);
 
 		if (OpposingRaycast) then
 			local RayCoverage = (RaycastResult.Position - OpposingRaycast.Position).Magnitude * (MaterialEffectors[OpposingRaycast.Material] or 1);
+			
+			local Hardness = RaycastResult.Instance:GetAttribute("MaterialHardness");
+			RayCoverage *= Hardness or 1;
 
 			return (RayCoverage <= 3);
 		end
