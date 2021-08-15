@@ -14,6 +14,7 @@ local Diagnostics = {
 };
 
 function Diagnostics:Start()
+	-- the worst code you've ever seen
 	local PlayerService = game:GetService("Players");
 	local Player = PlayerService.LocalPlayer;
 

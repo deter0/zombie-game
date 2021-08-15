@@ -19,12 +19,12 @@ local Wind = {
 	Range = 140,
 	Noises = {},
 	Original = {},
-	WindSpeed = 2,
-	WindStrength = .08,
-	UpdateStreamDistance = 50,
-	WindDirection = CFrame.Angles(0, 0, 0),
+	WindSpeed = .5,
+	WindStrength = 3,
+	UpdateStreamDistance = 25,
+	WindDirection = Vector3.new(1, 1, 1),
 	Streaming = {},
-	NoiseLayers = 12
+	NoiseLayers = 24
 };
 
 local function Find(b, v)
@@ -47,23 +47,6 @@ function Wind:UpdateStream(CameraPosition)
 	end
 
 	self.Streaming = Streaming;
-
-	-- for _, TaggedPart:BasePart|Bone in next, self.AllParts do
-	-- 	if (TaggedPart:IsA("BasePart") and TaggedPart:IsDescendantOf(workspace)) then -- * Is decendant of workspace to ensure that it is not being offloaded by streaming module
-	-- 		TaggedPart.CanCollide = false;
-	-- 		TaggedPart.Massless = true;
-	-- 		TaggedPart.Anchored = true;
-
-	-- 		local Distance = (CameraPosition - (TaggedPart.Position)).Magnitude;
-
-	-- 		if (Distance <= self.Range) then
-	-- 			self.Streaming[#self.Streaming + 1] = TaggedPart;
-	-- 		elseif (self.Original[TaggedPart]) then
-	-- 			TaggedPart.CFrame = self.Original[TaggedPart];
-	-- 			self.Original[TaggedPart] = nil;
-	-- 		end
-	-- 	end
-	-- end
 end
 
 local noise = math.noise;
@@ -82,12 +65,12 @@ function Wind:Start()
 
 	self.Noises = {};
 
-	local Angles = CFrame.Angles;
+	local Angles, rad = CFrame.Angles, math.rad;
 
 	self.Profile = StreamingModule.Classes.Profile.new({
 		Name = "Wind",
 		Config = {
-			ChunkSize = 40,
+			ChunkSize = 128,
 			StreamingDistance = self.Range,
 			Pack = false,
 		},
@@ -100,6 +83,7 @@ function Wind:Start()
 	self:UpdateStream(CameraPosition);
 
 	RunService.Heartbeat:Connect(function()
+		debug.profilebegin("Wind update");
 		CameraPosition = Camera.CFrame.Position;
 
 		if ((LastCameraPosition - CameraPosition).Magnitude >= self.UpdateStreamDistance and (time() - LastUpdated) > .8) then
@@ -108,27 +92,24 @@ function Wind:Start()
 			LastUpdated = time();
 		end
 
-		local now = time();
-
-		for i = 1, self.NoiseLayers do
-			self.Noises[i] = self:GetNoise(now, i);
-		end
+		local now = time() * self.WindSpeed;
 
 		local PartList = self.Streaming;
 		if (#PartList < 1) then return; end;
 
 		local CFrameList = table.create(#PartList);
 
-		debug.profilebegin("Wind update");
 		for index, Part in ipairs(PartList) do
-			local WindNoise = self.Noises[(index % self.NoiseLayers) + 1];
-			local WindNoise2 = self.Noises[((index - 1) % self.NoiseLayers) + 1];
-
 			if (not self.Original[Part]) then
 				self.Original[Part] = Part.CFrame;
 			end
 
-			CFrameList[index] = (self.Original[Part] * Angles(WindNoise2, WindNoise, -WindNoise * .4) * self.WindDirection);
+			local WindNoise = rad(noise(Part.Position.X, now, Part.Position.Z));
+			local WindNoise2 = rad(noise(Part.Position.X, now+Part.Position.X, Part.Position.Z));
+			local WindNoise3 = rad(noise(Part.Position.X, now+Part.Position.Z, Part.Position.Z));
+
+			local Noise = Vector3.new(WindNoise2, WindNoise3, -WindNoise * .4) * self.WindStrength;
+			CFrameList[index] = self.Original[Part] * Angles(Noise.X, Noise.Y, Noise.Z);
 		end
 
 		workspace:BulkMoveTo(PartList, CFrameList, Enum.BulkMoveMode.FireCFrameChanged);
