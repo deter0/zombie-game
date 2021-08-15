@@ -89,6 +89,7 @@ function WeaponHandler.new(FiringManager, ServerManager, env)
 			Speed = 0,
 			LoadingPercentageUpdated = Signal.new(),
 			Tick = 0,
+			Bloom = Recoil.new(),
 		},
 		WeaponHandler
 	);
@@ -583,7 +584,7 @@ function WeaponHandler:Update(DeltaTime:number)
 	local Muzzle = self.Weapon.Handle:FindFirstChild("Muzzle");
 	local FirePart = self.Weapon:FindFirstChild("FirePart");
 
-	self.MuzzlePosition = Muzzle and Muzzle.WorldPosition or (FirePart and FirePart.Position) or self.Weapon.Handle.Position;
+	self.MuzzlePosition = Camera.CFrame.Position; --Muzzle and Muzzle.WorldPosition or (FirePart and FirePart.Position) or self.Weapon.Handle.Position;
 	self.FireDirection = Camera.CFrame.LookVector;
 
 	-- if (FirePart) then
@@ -754,6 +755,8 @@ function WeaponHandler:Update(DeltaTime:number)
 	local newCFrame = self.WeaponShoveRecoil:Update(DeltaTime, self.Viewmodel.RootPart.CFrame);
 	self.Viewmodel.RootPart.CFrame = newCFrame;
 
+	self.Bloom.Value = not self.Bloom.Value and CFrame.new() or self.Bloom:Update(DeltaTime, self.Bloom.Value);
+
 	self:Footsteps();
 
 	AimingInfluence = nil;
@@ -770,11 +773,13 @@ function WeaponHandler:Fire()
 
 	local Muzzle = self.Weapon.Handle:FindFirstChild("Muzzle");
 
+	local Bloom = (self.Aiming and (self.WeaponConfig.AimingSpreadMultiplier or 0.33) or 1) * (not self.WeaponConfig.DisableRisingBloom and self.Bloom.CurrentRecoil.X or 1);
+
 	self.FiringManager:Fire(
 		self.FireDirection,
 		self.MuzzlePosition,
-		self.WeaponConfig.CastingConfig.MinBulletSpreadAngle * (self.Aiming and (self.WeaponConfig.AimingSpreadMultiplier or 0.33) or 1),
-		self.WeaponConfig.CastingConfig.MaxBulletSpreadAngle * (self.Aiming and (self.WeaponConfig.AimingSpreadMultiplier or 0.33) or 1)
+		Bloom * self.WeaponConfig.CastingConfig.MinBulletSpreadAngle,
+		Bloom * self.WeaponConfig.CastingConfig.MaxBulletSpreadAngle
 	);
 
 	self.WeaponShoveRecoil:Recoil(3, 75);
@@ -814,6 +819,8 @@ function WeaponHandler:Fire()
 	self.Recoil.RecoilClamp = self.WeaponConfig.RecoilClamp or 7;
 	self.Recoil.DecalSpeed = self.WeaponConfig.RecoilDecaySpeed or 5;
 	self.Recoil.RiseSpeed = self.WeaponConfig.RecoilRiseSpeed or 12;
+
+	self.Bloom:Recoil(6, 0);
 
 	self.Recoil:Recoil((self.WeaponConfig.RecoilUp or 15) * (self.Aiming and .33 or 1), (self.WeaponConfig.HorizontalRandomRecoil or 5) * (self.Aiming and 0.33 or 1));
 end

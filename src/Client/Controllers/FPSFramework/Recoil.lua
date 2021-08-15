@@ -5,7 +5,6 @@
 local Recoil = {
 	CurrentRecoil = Vector3.new(),
 	TargetRecoil = Vector3.new(),
-	RecoilTargetMagnitude = 3,
 	RecoilClamp = 7,
 	DecaySpeed = 5,
 	RiseSpeed = 12,
