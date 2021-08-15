@@ -63,25 +63,6 @@ function ImageSequencePlayer:Play(Target, Interval:number, Images, Delays, COLOR
 			
 			ImageLabels[index] = ImageLabel;
 		end
-		
-		-- local Images = {};
-		-- local InsertService = game:GetService("InsertService");
-		-- local function getImageIdFromDecal(decalId)
-		-- 	local decal = InsertService:LoadAsset(decalId):FindFirstChildWhichIsA("Decal")
-		-- 	return decal.Texture
-		-- end
-
-		-- local Decal = workspace.DecalPart.Decal;
-		-- local Animation = require(game.ReplicatedStorage.Aero.Shared.Animations.Logo);
-		-- for _, image in ipairs(Animation) do
-		-- 	local ids = tonumber(string.match(image, "%d+"));
-		-- 	table.insert(Images, getImageIdFromDecal(ids));
-		-- end
-		-- local str = "";
-		-- for i, v in ipairs(Images) do
-		-- 	str ..= "\""..v.."\",\n";
-		-- end
-		-- print(str);
 
 		local LastFrameInterval = 0;
 		local CurrentIndex = 1;
@@ -113,13 +94,13 @@ function ImageSequencePlayer:Play(Target, Interval:number, Images, Delays, COLOR
 				if ((CurrentIndex %#Images) + 1 == #Images) then
 					Player.Finished:Fire();
 				end
-				
+
 				for _, Image in ipairs(ImageLabels) do
 					Image.Visible = false;
 				end
-				
+
 				if (CurrentImg) then CurrentImg.Visible = false; end;
-				
+
 				if (ImageLabels[CurrentIndex]) then
 					ImageLabels[CurrentIndex].Visible = true;
 					CurrentImg = ImageLabels[CurrentIndex];

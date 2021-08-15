@@ -36,11 +36,8 @@ function InteractiveBeams:Update()
     for _, Beam:Beam in ipairs(self.Streaming) do
         local Delta = Beam.Attachment1.WorldPosition - Beam.Attachment0.WorldPosition;
 
-        local Direction = Delta.Unit;
-        local Distance = Delta.Magnitude;
-
         local Raycast = workspace:Raycast(
-            Beam.Attachment0.WorldPosition, Direction * Distance, self.RaycastParams
+            Beam.Attachment0.WorldPosition, Delta, self.RaycastParams
         );
 
         if (Raycast) then
@@ -58,7 +55,7 @@ function InteractiveBeams:Update()
 
             Beam.Transparency = NumberSequence.new({
                 NumberSequenceKeypoint.new(0, 0),
-                NumberSequenceKeypoint.new(1, 1)
+                NumberSequenceKeypoint.new(1, .3)
             });
         end
     end

@@ -89,7 +89,9 @@ function InputManager:Start()
 
     Thread.Spawn(function()
         self.Maid.Update = RunService.RenderStepped:Connect(function(DeltaTime)
+			debug.profilebegin("Weapon Handler Update");
             self.WeaponHandler:Update(DeltaTime);
+			debug.profileend();
         end)
     end)
 end
