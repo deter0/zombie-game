@@ -26,8 +26,8 @@ end
 function Recoil:Update(DeltaTime:number, TargetCFrame:CFrame)
 	local last = self.CurrentRecoil;
 
-	self.TargetRecoil = self.TargetRecoil:Lerp(Vector3.new(), DeltaTime * 5);
-	self.CurrentRecoil = self.CurrentRecoil:Lerp(self.TargetRecoil, DeltaTime * 12);
+	self.TargetRecoil = self.TargetRecoil:Lerp(Vector3.new(), DeltaTime * self.DecaySpeed);
+	self.CurrentRecoil = self.CurrentRecoil:Lerp(self.TargetRecoil, DeltaTime * self.RiseSpeed);
 
 	return TargetCFrame * GetVectorAsAngles(-last) * GetVectorAsAngles(self.CurrentRecoil);
 end
