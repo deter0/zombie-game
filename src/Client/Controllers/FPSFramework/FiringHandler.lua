@@ -96,7 +96,7 @@ function FiringHandler:CanRayPierce(Cast, RaycastResult:RaycastResult, ...) -- T
 	end
 
 	if (not Humanoid) then
-		BulletImpacts:Impacted(RaycastResult.Position, RaycastResult.Normal);
+		BulletImpacts:Impacted(RaycastResult.Position, RaycastResult.Normal, RaycastResult.Material);
 		BulletImpacts:BulletHole(RaycastResult.Position, RaycastResult.Normal, RaycastResult.Instance);
 	end
 

@@ -51,7 +51,7 @@ local BulletImpactSounds:Folder = SoundsEffects:WaitForChild("BulletImpacts");
 
 local VERY_FAR = Vector3.new(1e6, 1e6, 1e6);
 local BulletHoles = {};
-for i = 1, 50 do
+for _ = 1, 50 do
 	local BulletHole = workspace:WaitForChild("BulletHole"):Clone();
 	BulletHole.Position = VERY_FAR;
 	BulletHole.Parent = workspace:WaitForChild("Ignore");
@@ -68,7 +68,7 @@ end
 
 function BulletImpacts:Impacted(Position:Vector3, Normal:Vector3, Material:Enum.Material)
 	local Attachment:Attachment = Instance.new("Attachment");
-	Attachment.WorldPosition = Position;
+	Attachment.WorldCFrame = CFrame.lookAt(Position, Position + Normal);
 	local SoundFolder = BulletImpactSounds:FindFirstChild(self.Sounds[Material] or "Concrete") or BulletImpactSounds:FindFirstChild("Concrete");
 	if (SoundFolder) then
 		local Sounds = SoundFolder:GetChildren();
@@ -76,12 +76,31 @@ function BulletImpacts:Impacted(Position:Vector3, Normal:Vector3, Material:Enum.
 		Sound.Parent = Attachment;
 
 		Sound:Play();
-		Sound.Ended:Connect(function()
-			Attachment:Destroy();
-		end)
 	end
 
 	Attachment.Parent = ImpactPart;
+
+	self:Smoke(Attachment, Material);
+end
+
+local SmokeMaterialBlacklist = {
+	[Enum.Material.Metal] = true,
+	[Enum.Material.Wood] = true,
+	[Enum.Material.CorrodedMetal] = true,
+	[Enum.Material.Cobblestone] = true
+};
+function BulletImpacts:Smoke(Attachment, Material)
+	if (not SmokeMaterialBlacklist[Material]) then
+		for _, Smoke in ipairs(Particles:WaitForChild("Smoke"):GetChildren()) do
+			Smoke = Smoke:Clone();
+			Smoke.Parent = Attachment;
+			Smoke:Emit(4);
+		end
+	end
+
+	task.delay(2, function()
+		Attachment:Destroy();
+	end)
 end
 
 function BulletImpacts:BulletHole(Position:Vector3, Normal:Vector3, Part:BasePart)
@@ -142,7 +161,7 @@ function BulletImpacts:CanRayPierce(cast, rayResult, segmentVelocity)
 	else
 		cast.UserData.Hits += 1;
 	end
-	
+
 	if (cast.UserData.Hits > 1) then
 		return false;
 	end
