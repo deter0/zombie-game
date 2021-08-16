@@ -145,7 +145,6 @@ function LoadingScreen:Start()
 
 	local GifPlayer;
 	if (not RunService:IsStudio()) then
-		task.wait(4);
 		self.LoadingAnimation = require(Shared:WaitForChild("Animations"):WaitForChild("Logo"));
 		GifPlayer = self.Controllers.ImageSequencePlayer:Play(self.GifPlayer, .04, self.LoadingAnimation, {[1] = 1.5, [#self.LoadingAnimation] = 5});
 
@@ -155,10 +154,6 @@ function LoadingScreen:Start()
 	end
 
 	self:SetLoadingState("Presenting logos");
-
-	if (not RunService:IsStudio()) then
-		GifPlayer.Finished:Wait();
-	end
 
 	self:SetLoadingState("Waiting for fps framework");
 
@@ -170,19 +165,9 @@ function LoadingScreen:Start()
 
 	local ContentProvider = game:GetService("ContentProvider");
 
-	local ToLoad = {};
-
-	for _, ToLoadInstance:Instance in ipairs(ReplicatedStorage:WaitForChild("ToLoad"):GetChildren()) do
-		ToLoad[#ToLoad + 1] = ToLoadInstance;
-	end
-
-	ContentProvider:PreloadAsync(ToLoad);
+	ContentProvider:PreloadAsync(ReplicatedStorage:WaitForChild("ToLoad"):GetChildren());
 
 	self:SetLoadingState("Finalizing");
-
-	if (not RunService:IsStudio()) then
-		task.wait(4);
-	end
 
 	self:SetLoadingState(nil);
 	if (GifPlayer) then

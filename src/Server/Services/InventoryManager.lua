@@ -24,9 +24,9 @@ export type Item = {
 function InventoryManager:Start()
 	local PlayerInventoryStore = ProfileService.GetProfileStore("PlayerInventory", self:GetMockPlayerData());
 
-	PlayerService.PlayerAdded:Connect(coroutine.wrap(function(Player)
+	local PlayerAdded = coroutine.wrap(function(Player)
 		local Profile = PlayerInventoryStore:LoadProfileAsync(
-			("player-"..Player.UserId.."-v6"),
+			("player-"..Player.UserId.."-v7"),
 			"ForceLoad"
 		);
 
@@ -43,11 +43,21 @@ function InventoryManager:Start()
 			else
 				Profile:Release();
 			end
+		else
+			Player:Kick("Couldn't load data.");
 		end
-	end));
+	end)
+
+	for _, Player in ipairs(PlayerService:GetPlayers()) do PlayerAdded(Player); end;
+
+	PlayerService.PlayerAdded:Connect(PlayerAdded);
 
 	PlayerService.PlayerRemoving:Connect(function(Player)
-		InventoryManager.Data[Player] = nil;
+		local PlayerProfile = InventoryManager.Data[Player];
+
+		if (PlayerProfile) then
+			PlayerProfile:Release();
+		end
 	end)
 end
 
@@ -59,8 +69,7 @@ export type Inventory = {[number]:{Item}};
 --@param Player The Player whom's inventory we should get.
 function InventoryManager:GetInventory(Player:Player):Inventory
 	if (not InventoryManager.Data[Player]) then -- to stop it from waiting cuz roblox bad
-		repeat RunService.Heartbeat:Wait();
-			print("Waiting for inventory");
+		repeat task.wait(1);
 		until InventoryManager.Data[Player];
 	end
 	

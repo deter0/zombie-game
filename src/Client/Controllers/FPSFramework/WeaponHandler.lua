@@ -171,13 +171,14 @@ function WeaponHandler:SetCharacter(NewCharacter:Model)
 	end
 
 	self.ProximityParams = self.ProximityParams or RaycastParams.new();
-	table.clear(self.ProximityParams.FilterDescendantsInstances);
 	self.ProximityParams.FilterDescendantsInstances = {
-		NewCharacter,
+		self.Character,
 		Camera,
 		table.unpack(CollectionService:GetTagged("NotCollidable")),
 		table.unpack(CollectionService:GetTagged("PlayerCharacter"))
 	};
+	self.ProximityParams.FilterType = Enum.RaycastFilterType.Blacklist;
+	self.ProximityParams.IgnoreWater = true;
 
 	self.ActiveMaid.NonCollidableObjectAdded = CollectionService:GetInstanceAddedSignal("NotCollidable"):Connect(function()
 		self.ProximityParams.FilterDescendantsInstances = {
@@ -311,8 +312,6 @@ function WeaponHandler:Equip(WeaponName:string)
 	table.clear(self.RaycastParams.FilterDescendantsInstances);
 	self.RaycastParams.FilterDescendantsInstances = {Camera, self.Character, workspace.Weapons};
 
-	-- Wait for instances to load
-
 	self.Viewmodel:WaitForChild("RootPart"):WaitForChild("Weapon");
 	self.Weapon:WaitForChild("Handle");
 
@@ -321,8 +320,15 @@ function WeaponHandler:Equip(WeaponName:string)
 
 	self.Viewmodel.RootPart.Weapon.Part1 = self.Weapon.Handle;
 
-	self.Viewmodel.Parent = Camera;
 	self.Weapon.Parent = self.Viewmodel;
+
+	local ViewmodelContainer = Camera:FindFirstChild("ViewmodelContainer") or Instance.new("Model");
+	ViewmodelContainer.Name = "ViewmodelContainer";
+	ViewmodelContainer.Parent = Camera;
+
+	self.ViewmodelContainer = Camera:WaitForChild("ViewmodelContainer");
+
+	self.Viewmodel.Parent = self.ViewmodelContainer;
 	self.Crosshair.Parent = Camera;
 
 	self.ViewmodelAnimationController = self.Viewmodel:WaitForChild("AnimationController");
@@ -648,26 +654,26 @@ function WeaponHandler:Update(DeltaTime:number)
 	end
 
 	if (false) then
-		local Backpoint = Camera.CFrame.Position;
-		local _, Size = self.Viewmodel:GetBoundingBox();
-		Size = Size.Magnitude;
+		local Backpoint, Size = self.ViewmodelContainer:GetBoundingBox();
+		Size = Size.Z;
+		Backpoint = (Backpoint * CFrame.new(0, 0, -Size/2)).Position;
 
 		local ProximityRaycast = workspace:Raycast(
-			Backpoint, Camera.CFrame.LookVector * 2.4, self.ProximityParams
+			Camera.CFrame.Position, Camera.CFrame.LookVector * Size, self.ProximityParams
 		);
 
 		local Offset = EmptyCFrame;
 
 		if (ProximityRaycast) then
 			local Distance = (Camera.CFrame.Position - ProximityRaycast.Position).Magnitude;
-			Offset = CFrame.new(0, 0, (1-(Distance/Size))*Size);
+			Offset = CFrame.new(0, 0, Size/Distance);
 		end
 
 		if (not self.ProximityPushbackOffset) then
 			self.ProximityPushbackOffset = EmptyCFrame;
 		end
 
-		self.ProximityPushbackOffset = self.ProximityPushbackOffset:Lerp(Offset, clamp(DeltaTime * 5));
+		self.ProximityPushbackOffset = self.ProximityPushbackOffset:Lerp(Offset, clamp(DeltaTime * 10));
 
 		MasterOffset *= self.ProximityPushbackOffset;
 	end
