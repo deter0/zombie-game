@@ -444,8 +444,8 @@ end
 
 function WeaponHandler:FirePrime()
 	if (self.WeaponConfig.FireMode ~= 1) then
-		self:PlayAnimation("Firing", .3);
 		self:Fire();
+		self:PlayAnimation("Firing", .3);
 		ReplicatedStorage:WaitForChild("Events"):WaitForChild("Fired"):FireServer();
 		self.env.Controllers.Diagnostics:FiredRemoteEvent();
 		if (self.WeaponConfig.Pumping) then self:Pump(); end;
@@ -777,16 +777,15 @@ function WeaponHandler:Fire()
 		self.WeaponConfig.OnFired(self);
 	end
 
-	local Muzzle = self.Weapon.Handle:FindFirstChild("Muzzle");
-
 	local Bloom = (self.Aiming and (self.WeaponConfig.AimingSpreadMultiplier or 0.33) or 1) * (not self.WeaponConfig.DisableRisingBloom and self.Bloom.CurrentRecoil.X or 1);
-
 	self.FiringManager:Fire(
 		self.FireDirection,
 		self.MuzzlePosition,
 		Bloom * self.WeaponConfig.CastingConfig.MinBulletSpreadAngle,
 		Bloom * self.WeaponConfig.CastingConfig.MaxBulletSpreadAngle
 	);
+
+	local Muzzle = self.Weapon.Handle:FindFirstChild("Muzzle");
 
 	self.WeaponShoveRecoil:Recoil(3, 75);
 
