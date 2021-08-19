@@ -66,7 +66,7 @@ local function GetBulletHole()
 	return Bullet;
 end
 
-function BulletImpacts:Impacted(Position:Vector3, Normal:Vector3, Material:Enum.Material, Instance:Instance)
+function BulletImpacts:Impacted(Position:Vector3, Normal:Vector3, Material:Enum.Material, HitInstance:Instance)
 	local Attachment:Attachment = Instance.new("Attachment");
 	Attachment.WorldCFrame = CFrame.lookAt(Position, Position + Normal);
 	local SoundFolder = BulletImpactSounds:FindFirstChild(self.Sounds[Material] or "Concrete") or BulletImpactSounds:FindFirstChild("Concrete");
