@@ -841,10 +841,10 @@ function WeaponHandler:Footsteps()
 	if (self.FootstepFrame >= 60/3) then
 		self.FootstepFrame = 0;
 
-		local raycast = workspace:Raycast(self.Character.HumanoidRootPart.Position, Vector3.new(0, -8, 0), self.RaycastParams);
-		if (raycast) then
-			self.FloorMaterial = raycast.Material;
-			self.FootstepTable = FootstepSounds:GetTableFromMaterial(raycast.Material);
+		local Raycast = workspace:Raycast(self.Character.HumanoidRootPart.Position, Vector3.new(0, -8, 0), self.RaycastParams);
+		if (Raycast) then
+			self.FloorMaterial = Raycast.Material;
+			self.FootstepTable = FootstepSounds:GetTableFromMaterial(Raycast.Material);
 		end
 	end
 
