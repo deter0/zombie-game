@@ -43,7 +43,6 @@ function InputManager:Start()
 
     self.FiringManager = require(script:WaitForChild("FiringHandler"));
 
-    self.Weapons = game:GetService("ReplicatedStorage"):WaitForChild("Weapons"):GetChildren();
     self.WeaponHandler = self.WeaponHandlerClass.new(self.FiringManager, self.ServerWeaponManager, self);
     self.Maid.WeaponHandler = self.WeaponHandler;
 
@@ -67,14 +66,14 @@ function InputManager:Start()
 
     local debounce;
 
-    for i, Weapon in ipairs(self.Weapons) do
+    for i = 1, 3 do
         local function Equip(_, State)
             xpcall(function()
                 if (debounce) then return; end;
                 if (State ~= Enum.UserInputState.Begin) then return; end;
                 if (self.WeaponHandler.EquipAnimationPlaying) then return; end;
                 Thread.Spawn(function()
-                    self.WeaponHandler:Equip(Weapon.Name);
+                    self.WeaponHandler:Equip(i);
                 end)
 
             end, function(err)
@@ -82,7 +81,7 @@ function InputManager:Start()
             end)
         end
 
-        ContextActionService:BindAction("equip"..i, Equip, false, self.EnumBinds[i]);
+        ContextActionService:BindAction("Equip"..i, Equip, true, self.EnumBinds[i]);
     end
 
     print("Loaded");

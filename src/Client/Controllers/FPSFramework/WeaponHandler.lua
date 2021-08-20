@@ -15,7 +15,7 @@ local CollectionService = game:GetService("CollectionService");
 local UserInputService = game:GetService("UserInputService");
 local ContentProvider = game:GetService("ContentProvider");
 local TweenService = game:GetService("TweenService");
-local RunService =game:GetService("RunService");
+local RunService = game:GetService("RunService");
 
 local Shared = ReplicatedStorage:WaitForChild("Aero"):WaitForChild("Shared");
 
@@ -50,7 +50,10 @@ end
 -- end
 -- print(Lerp3(0, 10, 50, 25))
 
-local function IsStatusValid(Status:number):boolean
+local function IsStatusValid(Status:any):boolean
+	print(typeof(Status));
+	if (typeof(Status) ~= "number") then return true; end;
+
 	return (Status >= 200 and Status <= 299);
 end
 
@@ -218,20 +221,24 @@ function WeaponHandler:Equip(WeaponName:string)
 
 	self.Firing = false;
 
-	local Status = self.ServerManager:Equipped(WeaponName);
+	if (not self.ServerManager) then
+		self.ServerManager = self.Services.ServerWeaponManager;
+	end
+
+	local Weapon = self.ServerManager:Equipped(WeaponName);
 	self.env.Controllers.Diagnostics:InvokedRemoteFunction();
 
-	if (not IsStatusValid(Status)) then
-		warn("Got invalid status from server", Status);
+	warn("GOT WEAPON:", Weapon);
+
+	self.WeaponManager = Weapon;
+
+	if (not IsStatusValid(Weapon)) then
+		warn("Got unexpected status from server", Weapon);
 		return;
 	end
 
 	self:Remove();
 	self:SetCharacter(self.Character or Player.Character);
-
-	if (not self.ServerManager) then
-		self.ServerManager = self.Services.ServerWeaponManager;
-	end
 
 	self.Camera = Camera;
 
@@ -271,7 +278,7 @@ function WeaponHandler:Equip(WeaponName:string)
 
 	self.Running = false;
 
-	self.Weapon = ReplicatedStorage.Cache:FindFirstChild(WeaponName) or ReplicatedStorage:WaitForChild("Weapons"):FindFirstChild(WeaponName);
+	self.Weapon = Weapon.ClientModel;
 	local WasWeaponCached = self.Weapon.Parent.Name == "Cache";
 
 	if (not self.Weapon) then warn("Weapon not found"); return; end;
@@ -284,7 +291,7 @@ function WeaponHandler:Equip(WeaponName:string)
 
 	self.Humanoid = self.Character:WaitForChild("Humanoid");
 
-	self.WeaponConfig = require(self.Weapon:WaitForChild("Config"));
+	self.WeaponConfig = require(Weapon.ClientModel:WaitForChild("Config"));
 
 	self.Crosshair = ReplicatedStorage:WaitForChild("Crosshair"):Clone();
 	self.ActiveMaid.Crosshair = self.Crosshair;
@@ -769,9 +776,17 @@ function WeaponHandler:Update(DeltaTime:number)
 	GunSwayInfluence = nil;
 end
 
+function WeaponHandler:CanFire()
+	return (self.WeaponManager.AmmoInClip > 0);
+end
+
 function WeaponHandler:Fire()
 	if (self.Running) then return; end;
 	if (self.EquipAnimationPlaying) then return; end;
+	if (not self:CanFire()) then return; end;
+
+	self.WeaponManager.AmmoInClip -= 1;
+	print(self.WeaponManager.AmmoInClip);
 
 	if (self.WeaponConfig.OnFired) then
 		self.WeaponConfig.OnFired(self);
