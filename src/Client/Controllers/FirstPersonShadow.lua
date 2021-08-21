@@ -16,7 +16,7 @@ function FirstPersonShadow:Start()
 	local CharacterParts = {};
 	local Ignore = {["HumanoidRootPart"] = true}; -- Ignore these parts
 
-	local FAR = Vector3.new(1e6, 1e6, 1e6); -- Create a very far constant
+	local FAR = CFrame.new(1e6, 1e6, 1e6); -- Create a very far constant
 	Player.CharacterAdded:Connect(function(Character)
 		for _, Part in ipairs(CharacterParts) do Part:Destroy(); end; -- Destroy all the parts inside the array
 		table.clear(CharacterParts); -- Clear the array
@@ -28,7 +28,7 @@ function FirstPersonShadow:Start()
 				Clone.Material = Enum.Material.ForceField; -- Set it's material to force field
 				Clone.Transparency = -math.huge; -- Set the transparency to -inf
 				Clone.CanCollide = false; -- So it doesn't fling us
-				Clone.Position = FAR; -- Initially place it very far
+				Clone.CFrame = FAR; -- Initially place it very far
 
 				Clone.Parent = workspace; -- Set it's parent to the workspace
 				CharacterParts[#CharacterParts + 1] = Clone; -- Insert it to the table
@@ -40,21 +40,21 @@ function FirstPersonShadow:Start()
 
 
 	RunService.RenderStepped:Connect(function(DeltaTime:number)
+		debug.profilebegin("First Person Shadows");
 		local Character = Player.Character;
 
 		if (Character and Character:FindFirstChild("Head")) then -- Check if the character exists and the character's head exists since it can be destroyed and that can lead to errors
-			local CameraZoomDistance = (Character.Head.Position - Camera.CFrame.Position).Magnitude; -- Get the zoom distance
-
-			local IsInFirstPerson = CameraZoomDistance < 3; -- There might be a better way to check if the player is in first person
+			local IsInFirstPerson = Camera.CFrame.Position:FuzzyEq(Character.Head.Position, 3); -- There might be a better way to check if the player is in first person
 
 			for _, Part:BasePart in ipairs(CharacterParts) do -- Loop through the table where we inserted all the duplicate parts
 				local CharacterPart = Character:FindFirstChild(Part.Name);
 
 				if (CharacterPart) then -- If it finds a part with the same name inside the character then continue
-					Part.CFrame = IsInFirstPerson and CharacterPart.CFrame or CFrame.new(FAR); -- Set its CFrame to that character's part with the same name or very far depending on if the player is in first person
+					Part.CFrame = IsInFirstPerson and CharacterPart.CFrame or FAR; -- Set its CFrame to that character's part with the same name or very far depending on if the player is in first person
 				end
 			end
 		end
+		debug.profileend();
 	end)
 end
 
