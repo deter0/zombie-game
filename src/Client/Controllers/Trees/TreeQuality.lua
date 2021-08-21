@@ -2,7 +2,7 @@ local CollectionService = game:GetService("CollectionService");
 local GameSettings = UserSettings().GameSettings;
 local TreeQuality = {
 	HigherQualityParts = {},
-	Scheduled = 10,
+	Scheduled = 3,
 };
 
 function TreeQuality:Start()
