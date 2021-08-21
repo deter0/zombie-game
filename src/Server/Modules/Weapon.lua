@@ -35,10 +35,10 @@ function Weapon.new(Player:Player, WeaponName:string, AmmoData, Config)
 
 	self.ServerModel.Name = self.Player.Name;
 	self.ServerModel:WaitForChild("Handle").CFrame = CFrame.new(0, 45, 0);
-	self.ClientModel:WaitForChild("Handle").CFrame = CFrame.new(0, -45, 0);
+	self.ClientModel:WaitForChild("Handle").CFrame = CFrame.new(0, 45, 0);
 
-	self.ServerModel.Parent = workspace.Weapons;
-	self.ClientModel.Parent = workspace.Weapons;
+	self.ServerModel.Parent = ReplicatedStorage.Cache;
+	self.ClientModel.Parent = ReplicatedStorage.Cache;
 
 	self.PreferredWeapon = PreferConfig == 0 and self.ClientModel or self.ServerModel;
 
@@ -59,7 +59,7 @@ function Weapon:Fire()
 end
 
 function Weapon:CanFire()
-	return (self.AmmoInClip - self.Config.CastingConfig.BulletsPerShot) > 0;
+	return self.AmmoInClip > 0;
 end
 
 return Weapon;

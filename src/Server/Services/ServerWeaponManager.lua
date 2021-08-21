@@ -26,6 +26,7 @@ local WeaponManager = {
 	Client = {},
 	Data = {},
 	Ragdolls = {},
+	WeaponData = {},
 };
 
 function WeaponManager:GetPlayerData(Player:Player)
@@ -44,6 +45,20 @@ function WeaponManager:Start()
 		self.Data[Player] = nil;
 		PlayerData = nil;
 	end)
+
+	PlayerService.PlayerAdded:Connect(coroutine.wrap(function(Player)
+		self.WeaponData[Player] = {
+			Weapon.new(Player, "TrenchShotgun", {
+				AmmoInClip = 30
+			}),
+			Weapon.new(Player, "M27", {
+				AmmoInClip = 30
+			}),
+			Weapon.new(Player, "Flashlight", {
+				AmmoInClip = 0
+			}),
+		};
+	end))
 
 	local Fired:RemoteEvent = Events:WaitForChild("Fired");
 	Fired.OnServerEvent:Connect(function(...)
@@ -311,14 +326,39 @@ function WeaponManager:CreateStockData(Player:Player)
 	return self.Data[Player];
 end
 
+function WeaponManager:UnEquip(Player)
+	local PlayerData = self:GetPlayerData(Player);
+
+	if (PlayerData.Equipped) then
+		local EquippedWeapon = PlayerData.Weapon;
+
+		local WeaponMotor6DDirectory = Player.Character:WaitForChild("RightHand");
+		local WeaponMotor6D = WeaponMotor6DDirectory:FindFirstChild("Weapon");
+
+		if (WeaponMotor6D) then
+			WeaponMotor6D.Part1 = nil;
+		end
+
+		EquippedWeapon.ServerModel.Parent = ServerStorage.Cache;
+		EquippedWeapon.ServerModel.Handle.CFrame = CFrame.new(1e6, 1e6 ,1e6);
+	end
+end
+
 function WeaponManager:EquipWeapon(Player:Player, WeaponName:string)
-	WeaponName = type(WeaponName) == "number" and ServerStorage:WaitForChild("Weapons"):WaitForChild("Client"):GetChildren()[WeaponName].Name or WeaponName;
+	-- WeaponName = type(WeaponName) == "number" and ServerStorage:WaitForChild("Weapons"):WaitForChild("Client"):GetChildren()[WeaponName].Name or WeaponName;
 	if (not Player.Character or not Player.Character.PrimaryPart or not Player.Character:FindFirstChild("Humanoid")) then return 400; end;
 
 	local PlayerData = self:GetPlayerData(Player);
-	local PlayerWeapon = Weapon.new(Player, WeaponName, {AmmoInClip = 300});
 
-	print(WeaponName);
+	local PlayerWeapon = self.WeaponData[Player][WeaponName];
+
+	if (PlayerData.Equipped) then
+		self:UnEquip(Player);
+	end
+
+	if (not PlayerWeapon) then
+		return 404;
+	end
 
 	if (type(PlayerWeapon) == "number") then
 		return PlayerWeapon;
@@ -385,18 +425,6 @@ function WeaponManager:SetAiming(Player:Player, IsAiming:boolean)
 	end
 
 	return 400;
-end
-
-function WeaponManager:GetWeaponConfig(Player:Player, WeaponName:string)
-	-- TODO: Verify if the player can access this config
-
-	local Weapon = Weapons:FindFirstChild(WeaponName);
-
-	if (Weapon) then
-		return 200, require(Weapon:FindFirstChild("Config"));
-	end
-
-	return 404;
 end
 
 -- Client functions
