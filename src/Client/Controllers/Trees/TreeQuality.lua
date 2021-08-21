@@ -42,6 +42,7 @@ function TreeQuality:Update()
 						(math.random() - 0.5) * (WindPart:GetAttribute("LeavesRandomness") or 360),
 						math.random(12)-6
 					);
+					WindPartClone.CastShadow = false;
 					WindPartClone.Parent = WindPart.Parent;
 
 					self.HigherQualityParts[#self.HigherQualityParts + 1] = WindPartClone;
