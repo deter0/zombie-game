@@ -89,7 +89,6 @@ function WeaponManager:PlayerDidHitSomeone(Player:Player, CastUserData, Characte
 			};
 
 			local CastingConfig = PlayerData.WeaponConfig.CastingConfig;
-			local start = os.clock();
 			local _, _Cast = Cast:Raycast(
 				Origin,
 				Direction * 600, nil, {
@@ -106,7 +105,6 @@ function WeaponManager:PlayerDidHitSomeone(Player:Player, CastUserData, Characte
 					Humanoids = {},
 				}
 			);
-			print("casted in", os.clock()-start);
 
 			local Hit = false;
 			Hit = (table.find(_Cast.UserData.Humanoids, Humanoid));

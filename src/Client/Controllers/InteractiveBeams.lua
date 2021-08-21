@@ -48,7 +48,7 @@ function InteractiveBeams:Update()
             Beam.Segments = 10;
 
             Beam.Transparency = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, 0),
+                NumberSequenceKeypoint.new(0, .45),
                 NumberSequenceKeypoint.new(PercentDistance, 1),
                 NumberSequenceKeypoint.new(1, 1)
             });
@@ -56,7 +56,7 @@ function InteractiveBeams:Update()
             Beam.Segments = 1;
 
             Beam.Transparency = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, 0),
+                NumberSequenceKeypoint.new(0, .45),
                 NumberSequenceKeypoint.new(1, 1)
             });
         end
