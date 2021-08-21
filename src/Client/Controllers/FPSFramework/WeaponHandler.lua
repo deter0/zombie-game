@@ -460,6 +460,11 @@ function WeaponHandler:FirePrime()
 	else
 		ReplicatedStorage:WaitForChild("Events"):WaitForChild("Fired"):FireServer(true);
 		self.env.Controllers.Diagnostics:FiredRemoteEvent();
+
+		if (not self:CanFire()) then
+			self:PlaySound("ClipEmpty");
+		end
+
 		self.Firing = true;
 	end
 end

@@ -1,5 +1,12 @@
+local RunService = game:GetService("RunService");
 local Cast = {};
-Cast.Visualize = false;
+Cast.Visualize = true;
+
+local function PreciseWait(t)
+	local target = os.clock() + (t or 1/30);
+	repeat RunService.Stepped:Wait();
+	until os.clock() >= target;
+end
 
 local GREEN, RED = Color3.new(0, 1, 0), Color3.new(1, 0, 0);
 function Cast:Raycast(Start, Direction, OnRayUpdated, Config, RaycastParams:RaycastParams, UserData)
@@ -17,10 +24,16 @@ function Cast:Raycast(Start, Direction, OnRayUpdated, Config, RaycastParams:Rayc
 		RaycastParams.FilterDescendantsInstances = temp;
 	end
 
+	local LastPosition = Start;
 	for index, Node in ipairs(Trajectory) do
 		if (index == 1) then continue; end;
 
 		local LastNode = Trajectory[index - 1];
+
+		if (Node.Position - LastPosition).Magnitude > 10 then
+			PreciseWait(Config.TimeBetweenNodes);
+			LastPosition = Node.Position;
+		end
 
 		if (not LastNode) then
 			warn("LAST NODE NOT FOUND", index - 1, index);
@@ -41,9 +54,6 @@ function Cast:Raycast(Start, Direction, OnRayUpdated, Config, RaycastParams:Rayc
 			OnRayUpdated(_Cast, Node, LastNode, Direction);
 		end
 
-		if (not Config.Instant) then
-			task.wait(Config.TimeBetweenNodes);
-		end
 		self:DrawRaycast(LastNode.Position, Node.Position);
 	end
 

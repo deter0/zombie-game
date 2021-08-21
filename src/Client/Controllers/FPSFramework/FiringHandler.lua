@@ -173,7 +173,7 @@ function FiringHandler:Fire(Direction:Vector3, MuzzlePosition:Vector3, MinSpread
 					CanRayPierce = function(...)
 						return self:CanRayPierce(...);
 					end,
-					TimeBetweenNodes = self.WeaponCastingConfig.TimeBetweenBulletUpdate or 0.006,
+					TimeBetweenNodes = self.WeaponCastingConfig.TimeBetweenBulletUpdate or 0.017,
 					Instant = self.WeaponCastingConfig.IsHitScan or false,
 					Acceleration = self.WeaponCastingConfig.BulletAcceleration
 				}, self.RaycastParams, {
