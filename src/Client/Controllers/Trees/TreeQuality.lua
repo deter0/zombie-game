@@ -43,6 +43,7 @@ function TreeQuality:Update()
 						math.random(12)-6
 					);
 					WindPartClone.CastShadow = false;
+					CollectionService:AddTag(WindPartClone, "Leaves");
 					WindPartClone.Parent = WindPart.Parent;
 
 					self.HigherQualityParts[#self.HigherQualityParts + 1] = WindPartClone;
