@@ -163,9 +163,9 @@ function FiringHandler:Fire(Direction:Vector3, MuzzlePosition:Vector3, MinSpread
 		end
 
 		task.spawn(function()
-			Cast:Raycast(
+			local RaycastResult = Cast:Raycast(
 				MuzzlePosition,
-				NewDirection * 600, function(...)
+				NewDirection * (self.WeaponCastingConfig.BulletDistance or 600), function(...)
 					self:OnRayUpdated(...)
 				end, {
 					Precison = self.WeaponCastingConfig.BulletPrecison or 45,
@@ -183,6 +183,9 @@ function FiringHandler:Fire(Direction:Vector3, MuzzlePosition:Vector3, MinSpread
 				}
 			);
 
+			if (RaycastResult) then
+				BulletImpacts:BulletSparks(RaycastResult.Position, RaycastResult.Normal, RaycastResult.Material);
+			end
 			self:ReturnBullet(Bullet);
 		end)
 	end

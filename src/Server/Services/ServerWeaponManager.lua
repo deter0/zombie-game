@@ -91,7 +91,7 @@ function WeaponManager:PlayerDidHitSomeone(Player:Player, CastUserData, Characte
 			local CastingConfig = PlayerData.WeaponConfig.CastingConfig;
 			local _, _Cast = Cast:Raycast(
 				Origin,
-				Direction * 600, nil, {
+				Direction * CastingConfig.BulletDistance, nil, {
 					Precison = CastingConfig.BulletPrecison or 45,
 					StudsPerSecond = CastingConfig.BulletSpeed or 2600,
 					CanRayPierce = function(...)
