@@ -5,6 +5,7 @@ local Thread = require(Shared:WaitForChild("Thread"));
 local Base64 = require(Shared:WaitForChild("Base64"));
 
 local CanRayPierce = require(Shared:WaitForChild("CanRayPierce"));
+local Cast = require(Shared:WaitForChild("Cast"));
 local FastCast = require(ReplicatedStorage:WaitForChild("FastCast"));
 
 FastCast.VisualizeCasts = false;
@@ -67,26 +68,28 @@ function FiringHandler:CanRayPierce(Cast, RaycastResult:RaycastResult, ...) -- T
 	Cast.UserData.Damaged = Cast.UserData.Damaged or {};
 
 	local Humanoid = RaycastResult.Instance.Parent:FindFirstChildWhichIsA("Humanoid") or RaycastResult.Instance.Parent.Parent:FindFirstChildWhichIsA("Humanoid");
-	
+
 	if (not Cast.UserData.Damaged[RaycastResult.Instance.Parent]) then
 		if (Humanoid) then
 			Cast.UserData.Damaged[RaycastResult.Instance.Parent] = true;
 			Cast.UserData.Hits = Cast.UserData.Hits and Cast.UserData.Hits + 1 or 1;
 
-			Thread.SpawnNow(function()
+			task.spawn(function()
 				local Damage = Events:WaitForChild("Shot"):InvokeServer(
 					Cast.UserData,
 					Humanoid.Parent,
 					RaycastResult.Position,
-					RaycastResult.Instance
+					RaycastResult.Instance,
+					Cast.UserData.RayOrigin,
+					Cast.UserData.Direction
 				);
-				
+
 				if (Damage) then
 					Hitmarker:Hit(RaycastResult.Position, Damage, Humanoid.Parent);
 
 					if (Humanoid.Health <= 0 and not Humanoid:GetAttribute("Dead")) then
 						Humanoid:SetAttribute("Dead", true);
-						
+
 						local KilledPlayer:Player = PlayerService:GetPlayerFromCharacter(Humanoid.Parent);
 						Indicator:Indicate("Killed %s [+100]", KilledPlayer and KilledPlayer.DisplayName or Humanoid.Parent.Name);
 					end
@@ -116,6 +119,7 @@ function FiringHandler:Fire(Direction:Vector3, MuzzlePosition:Vector3, MinSpread
 	end
 
 	self.WeaponCastingConfig = self.WeaponManager.WeaponConfig.CastingConfig;
+	self.WeaponConfig = self.WeaponManager.WeaponConfig;
 
 	if (not self.WeaponCastingConfig) then
 		warn("No casting config found.");
@@ -147,8 +151,6 @@ function FiringHandler:Fire(Direction:Vector3, MuzzlePosition:Vector3, MinSpread
 			)
 		).LookVector;
 
-		local Cast = self.Caster:Fire(MuzzlePosition, NewDirection, self.WeaponCastingConfig.BulletSpeed, self.CastBehaviour);
-
 		local Bullet = self:GetBullet();
 
 		Bullet.AssemblyLinearVelocity = Vector3.new();
@@ -160,9 +162,29 @@ function FiringHandler:Fire(Direction:Vector3, MuzzlePosition:Vector3, MinSpread
 			Trail.Enabled = true;
 		end
 
-		Cast.UserData.Bullet = Bullet;
-		Cast.UserData.RayOrigin = MuzzlePosition;
-		Cast.UserData.Direction = NewDirection;
+		task.spawn(function()
+			Cast:Raycast(
+				MuzzlePosition,
+				NewDirection * 600, function(...)
+					self:OnRayUpdated(...)
+				end, {
+					Precison = self.WeaponCastingConfig.BulletPrecison or 45,
+					StudsPerSecond = self.WeaponCastingConfig.BulletSpeed or 2600,
+					CanRayPierce = function(...)
+						return self:CanRayPierce(...);
+					end,
+					TimeBetweenNodes = self.WeaponCastingConfig.TimeBetweenBulletUpdate or 0.006,
+					Instant = self.WeaponCastingConfig.IsHitScan or false,
+					Acceleration = self.WeaponCastingConfig.BulletAcceleration
+				}, self.RaycastParams, {
+					Bullet = Bullet,
+					RayOrigin = MuzzlePosition,
+					Direction = NewDirection
+				}
+			);
+
+			self:ReturnBullet(Bullet);
+		end)
 	end
 end
 
@@ -177,14 +199,16 @@ end
 
 -- * Can use OnRayPierced for velocity changes
 
-function FiringHandler:OnRayUpdated(Cast, SegmentOrigin, SegmentDirection, Length)
+function FiringHandler:OnRayUpdated(Cast, Node, LastNode, Direction)
 	local Bullet = Cast.UserData.Bullet;
 
 	if (Bullet) then
 		local BulletLength = Bullet.Size.Z / 2;
-		local baseCFrame = CFrame.lookAt(SegmentOrigin, SegmentOrigin + SegmentDirection);
-		
-		Bullet.CFrame = baseCFrame * CFrame.new(0, 0, -(Length - BulletLength));
+		local baseCFrame = CFrame.lookAt(Node.Position, Node.Position + Direction);
+
+		Bullet.CFrame = baseCFrame * CFrame.new(0, 0, -(BulletLength));
+	else
+		print("No bullet");
 	end
 end
 
@@ -192,22 +216,22 @@ function FiringHandler:CreateCaster()
 	self.Caster = FastCast.new();
 	self.CastBehaviour = FastCast.newBehavior();
 
-	local RaycastParams = RaycastParams.new();
-	RaycastParams.FilterType = Enum.RaycastFilterType.Blacklist;
-	RaycastParams.FilterDescendantsInstances = {
+	self.RaycastParams = RaycastParams.new();
+	self.RaycastParams.FilterType = Enum.RaycastFilterType.Blacklist;
+	self.RaycastParams.FilterDescendantsInstances = {
 		workspace.CurrentCamera,
 		Player.Character,
 		table.unpack(CollectionService:GetTagged("NotCollidable")),
 	};
 	CollectionService:GetInstanceAddedSignal("NotCollidable"):Connect(function()
-		RaycastParams.FilterDescendantsInstances = {
+		self.RaycastParams.FilterDescendantsInstances = {
 			workspace.CurrentCamera,
 			Player.Character,
 			table.unpack(CollectionService:GetTagged("NotCollidable")),
 		};
 	end);
 
-	self.CastBehaviour.RaycastParams = RaycastParams;
+	self.CastBehaviour.RaycastParams = self.RaycastParams;
 	self.CastBehaviour.HighFidelityBehavior = FastCast.HighFidelityBehavior.Default;
 	self.CastBehaviour.Acceleration = Vector3.new(0, -workspace.Gravity, 0);
 

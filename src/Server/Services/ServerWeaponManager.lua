@@ -1,4 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage");
+local Shared = ReplicatedStorage:WaitForChild("Aero"):WaitForChild("Shared");
 local ServerStorage = game:GetService("ServerStorage");
 
 local Aero = ServerStorage:WaitForChild("Aero");
@@ -8,14 +9,16 @@ local Weapon = require(Modules:WaitForChild("Weapon"));
 
 local Weapons = game:GetService("ServerStorage"):WaitForChild("Weapons");
 local FastCast = require(ReplicatedStorage:WaitForChild("FastCast"));
+local Cast = require(Shared:WaitForChild("Cast"));
 
+local CollectionService = game:GetService("CollectionService");
 local HttpService = game:GetService("HttpService");
 
 local Events = ReplicatedStorage:WaitForChild("Events");
-local Shared = ReplicatedStorage:WaitForChild("Aero"):WaitForChild("Shared");
 
 local Thread = require(Shared:WaitForChild("Thread"));
 local Status = require(Shared:WaitForChild("Status"));
+local CanRayPierce = require(Shared:WaitForChild("CanRayPierce"));
 
 local PlayerService = game:GetService("Players");
 
@@ -64,7 +67,7 @@ function WeaponManager:Start()
 	end)
 end
 
-function WeaponManager:PlayerDidHitSomeone(Player:Player, CastUserData, Character:Model, HitPosition:Vector3, HitPart:BasePart)
+function WeaponManager:PlayerDidHitSomeone(Player:Player, CastUserData, Character:Model, HitPosition:Vector3, HitPart:BasePart, Origin, Direction)
 	local PlayerData = self:GetPlayerData(Player);
 	local ShotPlayer = PlayerService:GetPlayerFromCharacter(Character);
 
@@ -73,16 +76,43 @@ function WeaponManager:PlayerDidHitSomeone(Player:Player, CastUserData, Characte
 	end
 
 	if (Character:GetAttribute("Ragdolled") ~= true and Character and PlayerData.WeaponConfig and Character.PrimaryPart) then
-		-- if (PlayerData.LastShot and (os.clock() - PlayerData.LastShot) < 60/PlayerData.WeaponConfig.FireRate) then
-		--     print("Player shot too early"); -- TODO: Cheat detection
-		--     return;
-		-- end
-
 		PlayerData.LastShot = time();
-
 		local Humanoid = Character:FindFirstChildWhichIsA("Humanoid");
 
 		if (Humanoid) then
+			local RaycastParams = RaycastParams.new();
+			RaycastParams.FilterType = Enum.RaycastFilterType.Blacklist;
+			RaycastParams.FilterDescendantsInstances = {
+				workspace.CurrentCamera,
+				Player.Character,
+				table.unpack(CollectionService:GetTagged("NotCollidable")),
+			};
+
+			local CastingConfig = PlayerData.WeaponConfig.CastingConfig;
+			local start = os.clock();
+			local _, _Cast = Cast:Raycast(
+				Origin,
+				Direction * 600, nil, {
+					Precison = CastingConfig.BulletPrecison or 45,
+					StudsPerSecond = CastingConfig.BulletSpeed or 2600,
+					CanRayPierce = function(...)
+						return self:CanRayPierce(...);
+					end,
+					Instant = true,
+					Acceleration = CastingConfig.BulletAcceleration
+				}, RaycastParams, {
+					RayOrigin = Origin,
+					Direction = Direction,
+					Humanoids = {},
+				}
+			);
+			print("casted in", os.clock()-start);
+
+			local Hit = false;
+			Hit = (table.find(_Cast.UserData.Humanoids, Humanoid));
+
+			if (Hit == nil) then return; end;
+
 			local Distance = (CastUserData.RayOrigin - Character.PrimaryPart.Position).Magnitude;
 			if (Distance > (PlayerData.WeaponConfig.CastingConfig.BulletMaxDist + 25)) then -- Error margin of 25 just because
 				print("Player shot too far"); -- TODO: Cheat detection
@@ -110,6 +140,17 @@ function WeaponManager:PlayerDidHitSomeone(Player:Player, CastUserData, Characte
 			return Damage;
 		end
 	end
+end
+
+function WeaponManager:CanRayPierce(Cast, RaycastResult:RaycastResult, ...) -- TODO
+	local CanPierce = CanRayPierce(Cast, RaycastResult, ...);
+
+	Cast.UserData.Damaged = Cast.UserData.Damaged or {};
+
+	local Humanoid = RaycastResult.Instance.Parent:FindFirstChildWhichIsA("Humanoid") or RaycastResult.Instance.Parent.Parent:FindFirstChildWhichIsA("Humanoid");
+	Cast.UserData.Humanoids[#Cast.UserData.Humanoids+1] = Humanoid;
+
+	return Humanoid and true or CanPierce;
 end
 
 local Ragdoll = require(Shared:WaitForChild("Ragdoll"));
